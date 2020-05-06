@@ -6,20 +6,33 @@
 // @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/udemy-improved-course-library
-// @version      0.0.3
+// @version      0.1.0
 // @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
 // @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
 // @match        https://www.udemy.com/home/my-courses/*
+// @grant        GM.setValue
+// @grant        GM.getValue
+// @grant        GM_registerMenuCommand
 // @copyright    2020, Tad Wohlrapp (https://github.com/TadWohlrapp/UserScripts)
 // @license      MIT
 // ==/UserScript==
 
-// You will need to create a personal API client. See https://www.udemy.com/user/edit-api-clients/
-const clientId = 'YOUR_CLIENT_ID';
-const clientSecret = 'YOUR_CLIENT_SECRET';
+(async function () {
+  let clientId = await GM.getValue("clientId");
+  let clientSecret = await GM.getValue("clientSecret");
 
-(function () {
+  clientId = getOrPrompt(clientId, "Client Id", "clientId");
+  clientSecret = getOrPrompt(clientSecret, "Client Secret", "clientSecret");
+
+  function getOrPrompt(targVar, credType, setValVarName) {
+    if (!targVar) {
+      targVar = prompt('Udemy API ' + credType + ' is not set yet. Please enter it below:', '');
+      GM.setValue(setValVarName, targVar);
+    }
+    return targVar;
+  }
+
   function fetchCourses() {
     listenForArchiveToggle();
     const courseContainers = document.querySelectorAll('[data-purpose="enrolled-course-card"]:not(.details-done)');
@@ -139,5 +152,27 @@ const clientSecret = 'YOUR_CLIENT_SECRET';
     const style = document.createElement('style');
     style.innerHTML = css;
     head.appendChild(style);
+  }
+
+  // not applicable for GM4+
+  if (typeof GM_registerMenuCommand !== 'undefined') {
+    GM_registerMenuCommand("Update API Client Id", changeClientId);
+    GM_registerMenuCommand("Update API Client Secret", changeClientSecret);
+
+    function changeClientId() {
+      promptAndChangeStoredValue(clientId, "Client Id", "clientId");
+    }
+
+    function changeClientSecret() {
+      promptAndChangeStoredValue(clientSecret, "Client Secret", "clientSecret");
+    }
+
+    function promptAndChangeStoredValue(targVar, userPrompt, setValVarName) {
+      targVar = prompt(
+        'Change Udemy API ' + userPrompt + ':',
+        targVar
+      );
+      GM.setValue(setValVarName, targVar);
+    }
   }
 })();
