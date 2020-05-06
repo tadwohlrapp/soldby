@@ -2,8 +2,8 @@
 // @name         Udemy - Improved Course Library
 // @namespace    https://github.com/TadWohlrapp/UserScripts
 // @description  Shows rating, number of reviews and number of students enrolled for all courses in your library
-// @icon         https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon@2x.png
-// @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64@2x.png
+// @icon         https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon.png
+// @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/udemy-improved-course-library
 // @version      0.0.1
