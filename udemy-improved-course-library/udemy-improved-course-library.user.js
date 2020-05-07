@@ -6,7 +6,7 @@
 // @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/tree/master/udemy-improved-course-library
-// @version      0.3.2
+// @version      0.3.3
 // @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
 // @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
@@ -21,12 +21,14 @@
     const courseContainers = document.querySelectorAll('[data-purpose="enrolled-course-card"]:not(.details-done)');
     if (courseContainers.length > 0) {
       [...courseContainers].forEach((courseContainer) => {
-        const courseLink = courseContainer.querySelector('.card--learning__image');
-        const courseId = courseLink.href.replace('https://www.udemy.com/course-dashboard-redirect/?course_id=', '');
-        const courseIdDiv = document.createElement('div');
-        courseIdDiv.innerHTML = '<a href="https://www.udemy.com/course/' + courseId + '/" target="_blank" rel="noopener" class="card__course-link">Visit Course overview</a>';
-        courseIdDiv.classList.add('card__details', 'custom');
-        courseLink.parentNode.appendChild(courseIdDiv);
+        const courseId = courseContainer.querySelector('.card--learning__image').href.replace('https://www.udemy.com/course-dashboard-redirect/?course_id=', '');
+        const courseCustomDiv = document.createElement('div');
+        const courseStatsDiv = document.createElement('div');
+        courseStatsDiv.innerHTML = '<a href="https://www.udemy.com/course/' + courseId + '/" target="_blank" rel="noopener" class="card__course-link">Visit Course overview</a>';
+        courseStatsDiv.classList.add('card__details');
+        courseCustomDiv.classList.add('card__custom');
+        courseCustomDiv.appendChild(courseStatsDiv);
+        courseContainer.appendChild(courseCustomDiv);
         courseContainer.classList.add('details-done');
 
         const fetchUrl = 'https://www.udemy.com/api-2.0/courses/' + courseId + '?fields[course]=avg_rating,num_reviews,num_subscribers';
@@ -65,17 +67,24 @@
               </g>
             </svg>
             `;
-          courseIdDiv.innerHTML += ratingStars + '<span class="card__rating-text">' + rating.toFixed(1) + '</span><span class="card__reviews-text">(' + reviews.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ')</span><br><span class="card__reviews-text">' + enrolled.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' students enrolled<span>';
+          courseStatsDiv.innerHTML += ratingStars
+                                    + '<span class="card__rating-text">' 
+                                    + rating.toFixed(1) 
+                                    + '</span><span class="card__reviews-text">(' 
+                                    + separator(reviews)
+                                    + ')</span><br><span class="card__reviews-text">' 
+                                    + separator(enrolled)
+                                    + ' students enrolled<span>';
           const getColor = v => `hsl(${((1 - v) * 120)},100%,50%)`;
           const colorValue = Math.min(Math.max((5 - rating) / 2, 0), 1);
           const ratingStripDiv = document.createElement('div');
-          ratingStripDiv.classList.add('card__rating-strip');
+          ratingStripDiv.style.height = '4px';
           ratingStripDiv.style.backgroundColor = getColor(colorValue);
-          courseLink.parentNode.appendChild(ratingStripDiv);
+          courseCustomDiv.appendChild(ratingStripDiv);
         })
           .catch(function (err) {
-            courseIdDiv.innerHTML += '<div class="card__nodata">Course stats not available</div>';
-            console.warn('Could not fetch stats for course ' + courseId + '. ', err);
+            courseStatsDiv.innerHTML += '<div class="card__nodata">Course stats not available</div>';
+            console.info('Could not fetch stats for course ' + courseId + '.', err);
           });
       });
     }
@@ -102,12 +111,15 @@
         const doneContainers = document.querySelectorAll('.details-done');
         [...doneContainers].forEach((doneContainer) => {
           doneContainer.classList.remove('details-done');
-          doneContainer.removeChild(doneContainer.querySelector('.card__details.custom'));
-          doneContainer.removeChild(doneContainer.querySelector('.card__rating-strip'));
+          doneContainer.removeChild(doneContainer.querySelector('.card__custom'));
         })
         mutationObserver.observe(targetNode, observerConfig);
       });
     });
+  }
+
+  function separator(int) {
+    return int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   }
 
   function addGlobalStyle(css) {
@@ -122,9 +134,8 @@
     span[class^="leave-rating--helper-text"] {
       font-size: 10px;
     }
-    .card__details.custom {
+    .card__custom .card__details {
       color: #29303b;
-      display: block;
       font-size: 13px;
       padding-top: 0;
     }
@@ -162,9 +173,6 @@
       margin: 18px 0 6px;
       color: #73726c;
       font-weight: 500;
-    }
-    .card__rating-strip {
-      height: 4px;
     }
   `);
 })();
