@@ -6,7 +6,7 @@
 // @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/tree/master/udemy-improved-course-library
-// @version      0.3.1
+// @version      0.3.2
 // @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
 // @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
@@ -67,7 +67,7 @@
             `;
           courseIdDiv.innerHTML += ratingStars + '<span class="card__rating-text">' + rating.toFixed(1) + '</span><span class="card__reviews-text">(' + reviews.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ')</span><br><span class="card__reviews-text">' + enrolled.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' students enrolled<span>';
           const getColor = v => `hsl(${((1 - v) * 120)},100%,50%)`;
-          const colorValue = Math.min(Math.max(parseInt((5 - rating) / 2), 0), 1);
+          const colorValue = Math.min(Math.max((5 - rating) / 2, 0), 1);
           const ratingStripDiv = document.createElement('div');
           ratingStripDiv.classList.add('card__rating-strip');
           ratingStripDiv.style.backgroundColor = getColor(colorValue);
@@ -103,6 +103,7 @@
         [...doneContainers].forEach((doneContainer) => {
           doneContainer.classList.remove('details-done');
           doneContainer.removeChild(doneContainer.querySelector('.card__details.custom'));
+          doneContainer.removeChild(doneContainer.querySelector('.card__rating-strip'));
         })
         mutationObserver.observe(targetNode, observerConfig);
       });
