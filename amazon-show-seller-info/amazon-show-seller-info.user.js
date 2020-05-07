@@ -14,7 +14,7 @@
 // @icon64          https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/icon64.png
 // @author          Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL     https://github.com/TadWohlrapp/UserScripts/tree/master/amazon-show-seller-info
-// @version         1.1.0
+// @version         1.1.1
 // @updateURL       https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.meta.js
 // @downloadURL     https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.user.js
 // @supportURL      https://github.com/TadWohlrapp/UserScripts/issues
@@ -30,6 +30,10 @@
 // @copyright       2020, Tad Wohlrapp (https://github.com/TadWohlrapp/UserScripts)
 // @license         MIT
 // ==/UserScript==
+
+// ==OpenUserJS==
+// @author Taddiboy
+// ==/OpenUserJS==
 
 (function () {
   'use strict';
