@@ -3,13 +3,7 @@
 
 This UserScript improves your Udemy Course Library by adding details to the Course Cards, so you know instantly, which courses are highly rated and popular, and which course you might want to archive instead.
 
-Turn this
-
-![before](https://user-images.githubusercontent.com/2788192/81252389-17c27b80-9026-11ea-93d7-520262442bdb.png)
-
-Into this
-
-![after](https://user-images.githubusercontent.com/2788192/81252419-2b6de200-9026-11ea-8b75-4a28077dc8eb.png)
+![screenshot](https://user-images.githubusercontent.com/2788192/81305415-9945f800-907e-11ea-85ed-ed19cd508941.png)
 
 ## Please note
 This script employs the Udemy API to fetch course data from its public course overview. If a course has stopped enrollment and isn't visible publicly, then no data is returned.
