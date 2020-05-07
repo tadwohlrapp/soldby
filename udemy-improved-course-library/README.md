@@ -11,7 +11,5 @@ Into this
 
 ![after](https://user-images.githubusercontent.com/2788192/81235753-f8aef400-8ffb-11ea-9050-e3bfa6e1ed7b.png)
 
-## Udemy API Access required
-You will need Udemy API credentials for the script to work. To request them, simply visit https://www.udemy.com/user/edit-api-clients/ and follow the steps there. Be creative.
-
-When running the script for the first time, you will be asked to enter those API credentials. In Tampermonkey and Violent Monkey those credentials can be changed later on. Greasemonkey 4+ decided against supporting options for UserScripts, so once set, you cannot change them anymore.
+## Please note
+This script employs the Udemy API to fetch course data from its public course overview. If a course has stopped enrollment and isn't visible publicly, then no data is returned.
