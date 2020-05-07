@@ -6,7 +6,7 @@
 // @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/tree/master/udemy-improved-course-library
-// @version      0.3.4
+// @version      0.3.5
 // @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
 // @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
@@ -16,6 +16,10 @@
 // @copyright    2020, Tad Wohlrapp (https://github.com/TadWohlrapp/UserScripts)
 // @license      MIT
 // ==/UserScript==
+
+// ==OpenUserJS==
+// @author Taddiboy
+// ==/OpenUserJS==
 
 (function () {
   function fetchCourses() {
@@ -70,13 +74,13 @@
             </svg>
             `;
           courseStatsDiv.innerHTML += ratingStars
-                                    + '<span class="card__rating-text">' 
-                                    + rating.toFixed(1) 
-                                    + '</span><span class="card__reviews-text">(' 
-                                    + separator(reviews)
-                                    + ')</span><br><span class="card__reviews-text">' 
-                                    + separator(enrolled)
-                                    + ' students enrolled<span>';
+            + '<span class="card__rating-text">'
+            + rating.toFixed(1)
+            + '</span><span class="card__reviews-text">('
+            + separator(reviews)
+            + ')</span><br><span class="card__reviews-text">'
+            + separator(enrolled)
+            + ' students enrolled<span>';
           const getColor = v => `hsl(${((1 - v) * 120)},100%,50%)`;
           const colorValue = Math.min(Math.max((5 - rating) / 2, 0), 1);
           const ratingStripDiv = document.createElement('div');
@@ -101,7 +105,7 @@
   const observerConfig = {
     childList: true,
     subtree: true
-  }
+  };
 
   mutationObserver.observe(targetNode, observerConfig);
 
@@ -114,14 +118,14 @@
         [...doneContainers].forEach((doneContainer) => {
           doneContainer.classList.remove('details-done');
           doneContainer.removeChild(doneContainer.querySelector('.card__custom'));
-        })
+        });
         mutationObserver.observe(targetNode, observerConfig);
       });
     });
   }
 
   function separator(int) {
-    return int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
   function addGlobalStyle(css) {

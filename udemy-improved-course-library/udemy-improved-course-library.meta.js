@@ -6,7 +6,7 @@
 // @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/tree/master/udemy-improved-course-library
-// @version      0.3.4
+// @version      0.3.5
 // @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
 // @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
@@ -16,3 +16,7 @@
 // @copyright    2020, Tad Wohlrapp (https://github.com/TadWohlrapp/UserScripts)
 // @license      MIT
 // ==/UserScript==
+
+// ==OpenUserJS==
+// @author Taddiboy
+// ==/OpenUserJS==
