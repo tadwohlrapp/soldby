@@ -5,11 +5,11 @@ This UserScript improves your Udemy Course Library by adding details to the Cour
 
 Turn this
 
-![before](https://user-images.githubusercontent.com/2788192/81235727-ecc33200-8ffb-11ea-9a58-eb63cd7ead26.png)
+![before](https://user-images.githubusercontent.com/2788192/81252389-17c27b80-9026-11ea-93d7-520262442bdb.png)
 
 Into this
 
-![after](https://user-images.githubusercontent.com/2788192/81235753-f8aef400-8ffb-11ea-9050-e3bfa6e1ed7b.png)
+![after](https://user-images.githubusercontent.com/2788192/81252419-2b6de200-9026-11ea-8b75-4a28077dc8eb.png)
 
 ## Please note
 This script employs the Udemy API to fetch course data from its public course overview. If a course has stopped enrollment and isn't visible publicly, then no data is returned.
