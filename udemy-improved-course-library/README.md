@@ -5,9 +5,9 @@
 
 ### This user script adds additional course info to the courses in your Udemy course library.
 
-It employs the Udemy API to grab more info about the courses in you library and appends it under each course:
+It employs the Udemy API to grab more info about the courses in you library and appends under each course:
 
-- The total runtime of each course
+- The total runtime of the course
 - The rating of the course
 - The number of ratings
 - The number of students enrolled
@@ -29,4 +29,4 @@ To use user scripts you need to first install a user script manager. They come a
 - [Tampermonkey](https://tampermonkey.net/) - Chrome, Edge, Safari, Firefox, Opera
 - [Greasemonkey](http://www.greasespot.net/) - Firefox
 
-After you have installed a user script manager, [click here to install the user script](https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js).
+After you have installed a user script manager, [click here to install the user script](https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js) and visit your Udemy course library 😃
