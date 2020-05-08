@@ -39,7 +39,7 @@
       courseLinkDiv.innerHTML = `
         <a href="https://www.udemy.com/course/${courseId}/" target="_blank" rel="noopener" class="card__course-link">
           ${i18n[lang].overview}
-          <svg fill="#686f7a" width="12" height="16" viewBox="0 0 24 24" style="vertical-align: text-bottom;margin-left: 4px;" xmlns="http://www.w3.org/2000/svg">
+          <svg fill="#686f7a" width="12" height="16" viewBox="0 0 24 24" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14c0 1.1.9 2 2 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3h-7z"></path>
           </svg>
         </a>
@@ -285,6 +285,7 @@
       color: #505763;
       margin-left: 2px;
       margin-right: 6px;
+      font-size: 13px;
     }
     .card__nodata {
       color: #73726c;
