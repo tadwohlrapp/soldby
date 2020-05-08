@@ -23,9 +23,10 @@
 
 (function () {
   const i18n = loadTranslations();
+  const lang = getLang(document.documentElement.lang);
+
   function fetchCourses() {
     listenForArchiveToggle();
-    const lang = getLang(document.documentElement.lang);
     const courseContainers = document.querySelectorAll('[data-purpose="enrolled-course-card"]:not(.details-done)');
     if (courseContainers.length == 0) { return; }
     [...courseContainers].forEach((courseContainer) => {
@@ -56,8 +57,9 @@
       courseContainer.appendChild(courseCustomDiv);
       courseContainer.classList.add('details-done');
 
-      const notAvailable = courseContainer.querySelector('.card--learning__details').href.includes('/draft/');
-      if (notAvailable) {
+      // If course page has draft status, do not even attempt to fetch its data
+      if (courseContainer.querySelector('.card--learning__details').href.includes('/draft/')) {
+        courseContainer.querySelector('.card__course-link').style.textDecoration = "line-through";
         courseStatsDiv.innerHTML += '<div class="card__nodata">' + i18n[lang].notavailable + '</div>';
         ratingStripDiv.style.backgroundColor = '#faebeb';
         return;
@@ -86,20 +88,8 @@
               <mask id="card__star-mask--` + courseId + `">
                 <rect x="0" y="0" width="` + ratingPercentage + `%" height="100%" fill="white"></rect>
               </mask>
-              <g fill="#dedfe0">
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="0"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="14"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="28"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="42"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="56"></use>
-              </g>
-              <g fill="#f4c150" mask="url(#card__star-mask--` + courseId + `)">
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="0"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="14"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="28"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="42"></use>
-                <use xlink:href="#icon-rating-star" width="14" height="14" x="56"></use>
-              </g>
+              <g fill="#dedfe0">` + buildStars() + `</g>
+              <g fill="#f4c150" mask="url(#card__star-mask--` + courseId + `)">` + buildStars() + `</g>
             </svg>
             `;
           courseStatsDiv.innerHTML = '<div class="card__course-stats">'
@@ -158,6 +148,14 @@
         mutationObserver.observe(targetNode, observerConfig);
       });
     });
+  }
+
+  function buildStars() {
+    let stars = '';
+    for (i = 0; i < 5; i++) {
+      stars += '<use xlink:href="#icon-rating-star" width="14" height="14" x="' + i * 14 + '"></use>';
+    }
+    return stars;
   }
 
   function setSeparator(int, lang) {
