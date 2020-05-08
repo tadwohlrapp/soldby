@@ -36,13 +36,14 @@
       courseCustomDiv.classList.add('card__custom');
 
       const courseLinkDiv = document.createElement('div');
-      courseLinkDiv.innerHTML = '<a href="https://www.udemy.com/course/'
-        + courseId
-        + '/" target="_blank" rel="noopener" class="card__course-link">'
-        + i18n[lang].overview
-        + '<svg fill="#686f7a" width="12" height="16" viewBox="0 0 24 24" style="vertical-align: text-bottom;margin-left: 4px;" xmlns="http://www.w3.org/2000/svg">'
-        + '<path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14c0 1.1.9 2 2 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3h-7z"></path>'
-        + '</svg></a>'
+      courseLinkDiv.innerHTML = `
+        <a href="https://www.udemy.com/course/${courseId}/" target="_blank" rel="noopener" class="card__course-link">
+          ${i18n[lang].overview}
+          <svg fill="#686f7a" width="12" height="16" viewBox="0 0 24 24" style="vertical-align: text-bottom;margin-left: 4px;" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14c0 1.1.9 2 2 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3h-7z"></path>
+          </svg>
+        </a>
+      `;
       courseLinkDiv.classList.add('card__custom-row');
       courseCustomDiv.appendChild(courseLinkDiv);
 
@@ -86,28 +87,20 @@
           const ratingPercentage = Math.round((rating / 5) * 100);
           const ratingStars = `
             <svg class="card__stars" width="100%" height="100%" viewBox="0 0 70 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <mask id="card__star-mask--` + courseId + `">
-                <rect x="0" y="0" width="` + ratingPercentage + `%" height="100%" fill="white"></rect>
+              <mask id="card__star-mask--${courseId}">
+                <rect x="0" y="0" width="${ratingPercentage}%" height="100%" fill="white"></rect>
               </mask>
-              <g fill="#dedfe0">` + buildStars() + `</g>
-              <g fill="#f4c150" mask="url(#card__star-mask--` + courseId + `)">` + buildStars() + `</g>
+              <g fill="#dedfe0">${buildStars()}</g>
+              <g fill="#f4c150" mask="url(#card__star-mask--${courseId})">${buildStars()}</g>
             </svg>
-            `;
-          courseStatsDiv.innerHTML = '<div class="card__course-stats"><div>'
-            + ratingStars
-            + '<span class="card__rating-text">'
-            + setDecimal(rating, lang)
-            + '</span>(<span style="font-weight:500;">'
-            + setSeparator(reviews, lang)
-            + '</span>)</div><div><span style="font-weight:500;">'
-            + setSeparator(enrolled, lang)
-            + '</span> '
-            + i18n[lang].enrolled
-            + '</div><div>'
-            + i18n[lang].updated
-            + '<span style="font-weight:500;">'
-            + updateDate
-            + '</span></div></div>';
+          `;
+          courseStatsDiv.innerHTML = `
+            <div class="card__course-stats">
+              <div>${ratingStars}<span class="card__rating-text">${setDecimal(rating, lang)}</span>(<span style="font-weight:500;">${setSeparator(reviews, lang)}</span>)</div>
+              <div><span style="font-weight:500;">${setSeparator(enrolled, lang)}</span> ${i18n[lang].enrolled}</div>
+              <div>${i18n[lang].updated}<span style="font-weight:500;">${updateDate}</span></div>
+            </div>
+          `;
           const getColor = v => `hsl(${((1 - v) * 120)},100%,50%)`;
           const colorValue = Math.min(Math.max((5 - rating) / 2, 0), 1);
           ratingStripDiv.style.backgroundColor = getColor(colorValue);
