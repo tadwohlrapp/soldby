@@ -65,7 +65,7 @@
         return;
       }
 
-      const fetchUrl = 'https://www.udemy.com/api-2.0/courses/' + courseId + '?fields[course]=rating,num_reviews,num_subscribers,content_length_video';
+      const fetchUrl = 'https://www.udemy.com/api-2.0/courses/' + courseId + '?fields[course]=rating,num_reviews,num_subscribers,content_length_video,last_update_date';
       fetch(fetchUrl)
         .then(response => {
           if (response.ok) {
@@ -82,6 +82,7 @@
           const reviews = json.num_reviews;
           const enrolled = json.num_subscribers;
           const runtime = json.content_length_video;
+          const updateDate = json.last_update_date
           const ratingPercentage = Math.round((rating / 5) * 100);
           const ratingStars = `
             <svg class="card__stars" width="100%" height="100%" viewBox="0 0 70 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -92,17 +93,21 @@
               <g fill="#f4c150" mask="url(#card__star-mask--` + courseId + `)">` + buildStars() + `</g>
             </svg>
             `;
-          courseStatsDiv.innerHTML = '<div class="card__course-stats">'
+          courseStatsDiv.innerHTML = '<div class="card__course-stats"><div>'
             + ratingStars
             + '<span class="card__rating-text">'
             + setDecimal(rating, lang)
-            + '</span><span class="card__reviews-text">('
+            + '</span>(<span style="font-weight:500;">'
             + setSeparator(reviews, lang)
-            + ')</span><br>'
+            + '</span>)</div><div><span style="font-weight:500;">'
             + setSeparator(enrolled, lang)
-            + ' '
+            + '</span> '
             + i18n[lang].enrolled
-            + '</div>';
+            + '</div><div>'
+            + i18n[lang].updated
+            + '<span style="font-weight:500;">'
+            + updateDate
+            + '</span></div></div>';
           const getColor = v => `hsl(${((1 - v) * 120)},100%,50%)`;
           const colorValue = Math.min(Math.max((5 - rating) / 2, 0), 1);
           ratingStripDiv.style.backgroundColor = getColor(colorValue);
@@ -189,6 +194,7 @@
       'en-us': {
         'overview': 'Course overview',
         'enrolled': 'students',
+        'updated': 'Last updated ',
         'notavailable': 'Course stats not available',
         'separator': ',',
         'decimal': '.'
@@ -196,6 +202,7 @@
       'de-de': {
         'overview': 'Kursübersicht',
         'enrolled': 'Teilnehmer',
+        'updated': 'Zuletzt aktualisiert ',
         'notavailable': 'Kursstatistiken nicht verfügbar',
         'separator': '.',
         'decimal': ','
@@ -203,6 +210,7 @@
       'es-es': {
         'overview': 'Descripción del curso',
         'enrolled': 'estudiantes',
+        'updated': 'Última actualización ',
         'notavailable': 'Las estadísticas del curso no están disponibles',
         'separator': '.',
         'decimal': ','
@@ -210,6 +218,7 @@
       'fr-fr': {
         'overview': 'Aperçu du cours',
         'enrolled': 'participants',
+        'updated': 'Dernière mise à jour : ',
         'notavailable': 'Statistiques sur les cours non disponibles',
         'separator': ' ',
         'decimal': ','
@@ -217,6 +226,7 @@
       'it-it': {
         'overview': 'Panoramica del corso',
         'enrolled': 'studenti',
+        'updated': 'Ultimo aggiornamento ',
         'notavailable': 'Statistiche del corso non disponibili',
         'separator': '.',
         'decimal': ','
@@ -255,7 +265,7 @@
       color: #003845 !important;
     }
     .card__course-stats-ct {
-      height: 48px;
+      height: 64px;
       display: flex;
       align-items: center;
     }
@@ -263,6 +273,7 @@
       font-size: 12px;
       font-weight: 400;
       color: #686f7a;
+      line-height: 1.5;
     }
     .card__stars {
       display: inline-block;
