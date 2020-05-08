@@ -6,7 +6,7 @@
 // @icon64       https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/icon64.png
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/tree/master/udemy-improved-course-library
-// @version      0.5.0
+// @version      0.6.0
 // @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
 // @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
@@ -63,7 +63,7 @@
         return;
       }
 
-      const fetchUrl = 'https://www.udemy.com/api-2.0/courses/' + courseId + '?fields[course]=rating,num_reviews,num_subscribers';
+      const fetchUrl = 'https://www.udemy.com/api-2.0/courses/' + courseId + '?fields[course]=rating,num_reviews,num_subscribers,content_length_video';
       fetch(fetchUrl)
         .then(response => {
           if (response.ok) {
@@ -79,6 +79,7 @@
           const rating = json.rating.toFixed(1);
           const reviews = json.num_reviews;
           const enrolled = json.num_subscribers;
+          const runtime = json.content_length_video;
           const ratingPercentage = Math.round((rating / 5) * 100);
           const ratingStars = `
             <svg class="card__stars" width="100%" height="100%" viewBox="0 0 70 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -115,6 +116,13 @@
           const getColor = v => `hsl(${((1 - v) * 120)},100%,50%)`;
           const colorValue = Math.min(Math.max((5 - rating) / 2, 0), 1);
           ratingStripDiv.style.backgroundColor = getColor(colorValue);
+
+          // Add course runtime, YouTube style
+          const thumbnailDiv = courseContainer.querySelector('.card__image');
+          const runtimeSpan = document.createElement('span');
+          runtimeSpan.classList.add('card__course-runtime');
+          runtimeSpan.innerHTML = parseRuntime(runtime);
+          thumbnailDiv.appendChild(runtimeSpan);
         })
         .catch(error => {
           courseStatsDiv.innerHTML += '<div class="card__nodata">' + i18n[lang].notavailable + '</div>';
@@ -170,6 +178,14 @@
     document.head.appendChild(style);
   }
 
+  function parseRuntime(seconds) {
+    const h = Math.floor(seconds / 60 / 60);
+    const m = Math.floor(seconds / 60) - (h * 60);
+    const s = seconds % 60;
+    const timeString = h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0');
+    return timeString.replace(/^[0:]+/, '');
+  }
+
   function loadTranslations() {
     return {
       'en-us': {
@@ -214,6 +230,19 @@
     span[class^="leave-rating--helper-text"] {
       font-size: 10px;
       white-space: nowrap;
+    }
+    .card__course-runtime {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background-color: rgba(0,0,0,0.75);
+      color: #ffffff;
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      margin: 4px;
+      padding: 2px 4px;
+      border-radius: 2px;
     }
     .card__custom-row {
       color: #29303b;
