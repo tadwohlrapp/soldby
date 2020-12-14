@@ -7,8 +7,6 @@
 // @author       Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL  https://github.com/TadWohlrapp/UserScripts/tree/master/udemy-improved-course-library
 // @version      0.6.0
-// @updateURL    https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.meta.js
-// @downloadURL  https://github.com/TadWohlrapp/UserScripts/raw/master/udemy-improved-course-library/udemy-improved-course-library.user.js
 // @supportURL   https://github.com/TadWohlrapp/UserScripts/issues
 // @match        https://www.udemy.com/home/my-courses/*
 // @compatible   chrome Tested with Tampermonkey v4.9 and Violentmonkey v2.12.7
@@ -79,6 +77,10 @@
         })
         .then(json => {
           if (typeof json === 'undefined') { return; }
+          const time = json.content_length_video;
+          const hours = Math.floor(time/3600);
+          const minutes = Math.floor((time - hours*3600)/60)
+          const totalTime = `${hours}h${minutes}min`
           const rating = json.rating.toFixed(1);
           const reviews = json.num_reviews;
           const enrolled = json.num_subscribers;
@@ -98,6 +100,7 @@
             <div class="card__course-stats">
               <div>${ratingStars}<span class="card__rating-text">${setDecimal(rating, lang)}</span>(<span style="font-weight:500;">${setSeparator(reviews, lang)}</span>)</div>
               <div><span style="font-weight:500;">${setSeparator(enrolled, lang)}</span> ${i18n[lang].enrolled}</div>
+              <div><span style="font-weight:500;">${totalTime}</span></div>
               <div>${i18n[lang].updated}<span style="font-weight:500;">${updateDate}</span></div>
             </div>
           `;
