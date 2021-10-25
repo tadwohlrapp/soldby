@@ -14,7 +14,7 @@
 // @icon64          https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/icon64.png
 // @author          Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL     https://github.com/TadWohlrapp/UserScripts/tree/master/amazon-show-seller-info
-// @version         1.1.2
+// @version         1.1.3
 // @updateURL       https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.meta.js
 // @downloadURL     https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.user.js
 // @supportURL      https://github.com/TadWohlrapp/UserScripts/issues
@@ -42,7 +42,6 @@
   // Country codes as per ISO 3166-1 alpha-2
   // Set to [] to highlight no sellers at all
   // Set to ['FR'] to highlight sellers from France
-  // Supported country codes: https://www.countryflags.io/#countries
   // Default: ['CN', 'HK']
  
   // Check URLs for page type (search result page and best sellers page)
@@ -119,15 +118,13 @@
                 const sellerUlLast = sellerUl[sellerUl.length - 1]; //get last list
                 const sellerLi = sellerUlLast.querySelectorAll('li'); //get all li
                 const sellerLiLast = sellerLi[sellerLi.length - 1]; //get last li
-                const sellerCountry = sellerLiLast.textContent;
+                const sellerCountry = sellerLiLast.textContent.toUpperCase();
  
                 if (sellerCountry.length == 2) {
-                  const flag = document.createElement('img');
-                  flag.setAttribute('src', 'https://www.countryflags.io/' + sellerCountry.toLowerCase() + '/flat/32.png');
-                  flag.setAttribute('width', '16');
-                  flag.setAttribute('height', '16');
-                  flag.setAttribute('style', 'margin-right: 5px;');
+                  const flag = document.createElement('span');
+                  flag.textContent = getFlagEmoji(sellerCountry);
                   flag.title = sellerCountry;
+                  flag.classList.add('seller-flag');
                   sellerInfoLink.prepend(flag);
  
                   // Highlight sellers from countries defined in 'highlightedCountries'
@@ -199,6 +196,14 @@
       return parser.parseFromString(html, 'text/html');
     }
  
+    // Country Code to Flag Emoji (Source: https://dev.to/jorik/country-code-to-flag-emoji-a21)
+    function getFlagEmoji(countryCode) {
+      const codePoints = countryCode
+        .split('')
+        .map(char =>  127397 + char.charCodeAt());
+      return String.fromCodePoint(...codePoints);
+    }
+
     function addGlobalStyle(css) {
       const head = document.getElementsByTagName('head')[0];
       if (!head) { return; }
@@ -229,6 +234,12 @@
         border-color: #D0D0D0;
         text-decoration: none;
         background-color: #F3F3F3;
+    }
+    span.seller-flag {
+        font-size: 23px;
+        line-height: 15px;
+        vertical-align: text-top;
+        margin-right: 5px;
     }
     #zg-center-div .zg-item-immersion {
         height: 390px;

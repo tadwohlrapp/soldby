@@ -14,7 +14,7 @@
 // @icon64          https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/icon64.png
 // @author          Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL     https://github.com/TadWohlrapp/UserScripts/tree/master/amazon-show-seller-info
-// @version         1.1.2
+// @version         1.1.3
 // @updateURL       https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.meta.js
 // @downloadURL     https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.user.js
 // @supportURL      https://github.com/TadWohlrapp/UserScripts/issues
