@@ -14,7 +14,7 @@
 // @icon64          https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/icon64.png
 // @author          Tad Wohlrapp <tadwohlrapp@gmail.com>
 // @homepageURL     https://github.com/TadWohlrapp/UserScripts/tree/master/amazon-show-seller-info
-// @version         1.1.1
+// @version         1.1.2
 // @updateURL       https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.meta.js
 // @downloadURL     https://github.com/TadWohlrapp/UserScripts/raw/master/amazon-show-seller-info/amazon-show-seller-info.user.js
 // @supportURL      https://github.com/TadWohlrapp/UserScripts/issues
@@ -37,54 +37,54 @@
 
 (function () {
   'use strict';
-
+ 
   const highlightedCountries = ['CN', 'HK'];
   // Country codes as per ISO 3166-1 alpha-2
   // Set to [] to highlight no sellers at all
   // Set to ['FR'] to highlight sellers from France
   // Supported country codes: https://www.countryflags.io/#countries
   // Default: ['CN', 'HK']
-
+ 
   // Check URLs for page type (search result page and best sellers page)
   const isSearchResultPage = window.location.href.match(/.*\.amazon\..*\/s\?.*/);
   const isBestsellersPage = window.location.href.match(/.*\.amazon\..*\/gp\/bestsellers\/.*/) || window.location.href.match(/.*\.amazon\..*\/Best\-Sellers\-.*/);
-
+ 
   if (isSearchResultPage || isBestsellersPage) {
     function showSellerCountry() {
-
+ 
       const products = isSearchResultPage ?
         document.querySelectorAll('h2.a-size-mini.a-spacing-none.a-color-base a.a-link-normal.a-text-normal:not([data-seller])') :
         document.querySelectorAll('span.aok-inline-block.zg-item>a.a-link-normal:not([data-seller])');
-
+ 
       for (let i = 0; i < products.length; i++) {
         const product = products[i];
         product.setAttribute('data-seller', 'set');
-
+ 
         if (product.href && product.href.match(/.*\.amazon\..*\/(.*\/dp|gp\/slredirect)\/.*/)) {
-
+ 
           fetch(product.href).then(function (response) {
             if (response.ok) {
               return response.text();
             }
           }).then(function (html) {
             const productPage = parse(html);
-            const thirdPartySeller = productPage.querySelector('#qualifiedBuybox #sellerProfileTriggerId, #newAccordionRow #sellerProfileTriggerId, #shipsFromSoldBy_feature_div #sellerProfileTriggerId');
+            const thirdPartySeller = productPage.querySelector('#desktop_qualifiedBuyBox #merchant-info a:first-of-type, #newAccordionRow #merchant-info a:first-of-type');
             const isThirdPartySeller = thirdPartySeller !== null;
-
+ 
             if (isThirdPartySeller) {
               thirdPartySeller.textContent = thirdPartySeller.textContent.trim();
-              thirdPartySeller.href = thirdPartySeller.href.replace(/gp\/help\/seller.*/g, 'sp?' + thirdPartySeller.href.match(/(seller=.*?)(&|$)/)[1]);
+              thirdPartySeller.href = thirdPartySeller.href.replace(/sp\?.*/g, 'sp?' + thirdPartySeller.href.match(/(seller=[^&]*)/)[1]);
               const sellerInfoLink = document.createElement('a');
               sellerInfoLink.href = thirdPartySeller.href;
               const sellerInfoContent = document.createTextNode(thirdPartySeller.textContent);
               sellerInfoLink.appendChild(sellerInfoContent);
               sellerInfoLink.classList.add('seller-info');
-
+ 
               isSearchResultPage ?
                 product.parentNode.parentNode.appendChild(sellerInfoLink) :
                 product.parentNode.insertBefore(sellerInfoLink, product.parentNode.querySelector('.a-icon-row.a-spacing-none'));
-
-
+ 
+ 
               fetch(thirdPartySeller.href).then(function (response) {
                 if (response.ok) {
                   return response.text();
@@ -97,7 +97,7 @@
                 const sellerPage = parse(html);
                 // Get seller rating
                 let rating = sellerPage.getElementById('seller-feedback-summary');
-
+ 
                 let ratingPercentage = '';
                 let ratingCount = '';
                 if (sellerPage.getElementById('feedback-no-rating')) {
@@ -113,14 +113,14 @@
                 const sellerInfoRatingText = ' (' + ratingPercentage + ' | ' + ratingCount + ')';
                 const sellerInfoRating = document.createTextNode(sellerInfoRatingText);
                 sellerInfoLink.appendChild(sellerInfoRating);
-
+ 
                 // Get seller country & flag
                 const sellerUl = sellerPage.querySelectorAll('ul.a-unordered-list.a-nostyle.a-vertical'); //get all ul
                 const sellerUlLast = sellerUl[sellerUl.length - 1]; //get last list
                 const sellerLi = sellerUlLast.querySelectorAll('li'); //get all li
                 const sellerLiLast = sellerLi[sellerLi.length - 1]; //get last li
                 const sellerCountry = sellerLiLast.textContent;
-
+ 
                 if (sellerCountry.length == 2) {
                   const flag = document.createElement('img');
                   flag.setAttribute('src', 'https://www.countryflags.io/' + sellerCountry.toLowerCase() + '/flat/32.png');
@@ -129,17 +129,17 @@
                   flag.setAttribute('style', 'margin-right: 5px;');
                   flag.title = sellerCountry;
                   sellerInfoLink.prepend(flag);
-
+ 
                   // Highlight sellers from countries defined in 'highlightedCountries'
                   if (highlightedCountries.includes(sellerCountry)) {
                     const outercontainer = isSearchResultPage ?
                       product.closest('.a-carousel-card, .s-result-item') :
                       product.closest('.zg-item-immersion');
-
+ 
                     const productImage = isSearchResultPage ?
                       outercontainer.querySelector('.s-image') :
                       outercontainer.querySelector('.zg-text-center-align img');
-
+ 
                     outercontainer.style.background = 'linear-gradient(180deg, rgba(222,41,14,0.33) 0%, rgba(222,41,14,0) 100%)';
                     productImage.style.opacity = '0.66';
                   }
@@ -149,7 +149,7 @@
               }).catch(function (err) {
                 console.warn('Could not fetch seller data for "' + thirdPartySeller.textContent + '" (' + thirdPartySeller.href + '): ', err);
               });
-
+ 
             } else {
               const sellerInfoDiv = document.createElement('div');
               let soldbyAmazon = productPage.querySelector('#merchant-info').textContent.trim();
@@ -163,12 +163,12 @@
               const sellerInfoContent = document.createTextNode(soldbyAmazon);
               sellerInfoDiv.appendChild(sellerInfoContent);
               sellerInfoDiv.classList.add('seller-info');
-
+ 
               isSearchResultPage ?
                 product.parentNode.parentNode.appendChild(sellerInfoDiv) :
                 product.parentNode.insertBefore(sellerInfoDiv, product.parentNode.querySelector('.a-icon-row.a-spacing-none'));
             }
-
+ 
           }).catch(function (err) {
             // There was an error
             console.warn('Something went wrong fetching ' + product.href, err);
@@ -176,29 +176,29 @@
         }
       }
     }
-
+ 
     // Run script once on document ready
     showSellerCountry();
-
+ 
     // Initialize new MutationObserver
     const mutationObserver = new MutationObserver(showSellerCountry);
-
+ 
     // Let MutationObserver target the grid containing all thumbnails
     const targetNode = document.body;
-
+ 
     const mutationObserverOptions = {
       childList: true,
       subtree: true
     }
-
+ 
     // Run MutationObserver
     mutationObserver.observe(targetNode, mutationObserverOptions);
-
+ 
     function parse(html) {
       const parser = new DOMParser();
       return parser.parseFromString(html, 'text/html');
     }
-
+ 
     function addGlobalStyle(css) {
       const head = document.getElementsByTagName('head')[0];
       if (!head) { return; }
@@ -206,7 +206,7 @@
       style.innerHTML = css;
       head.appendChild(style);
     }
-
+ 
     // Add Google's own CSS used for image dimensions
     addGlobalStyle(`
     .seller-info {
