@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.1.3
+// @version         1.1.4
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/amazon-show-seller-info-userscript
 // @supportURL      https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/issues
@@ -62,7 +62,13 @@
             }
           }).then(function (html) {
             const productPage = parse(html);
-            const thirdPartySeller = productPage.querySelector('#desktop_qualifiedBuyBox #merchant-info a:first-of-type, #newAccordionRow #merchant-info a:first-of-type');
+            const thirdPartySellerSelectors = [
+              '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #sellerProfileTriggerId',
+              '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #merchant-info a:first-of-type',
+              '#newAccordionRow #sellerProfileTriggerId',
+              '#newAccordionRow #merchant-info a:first-of-type'
+            ]
+            const thirdPartySeller = productPage.querySelector(String(thirdPartySellerSelectors));
             const isThirdPartySeller = thirdPartySeller !== null;
  
             if (isThirdPartySeller) {
@@ -89,8 +95,13 @@
                 }
               }).then(function (html) {
                 const sellerPage = parse(html);
+
+                // Detect Amazon's 2022-04-20 redesign
+                const sellerProfileContainer = sellerPage.getElementById('seller-profile-container');
+                const isRedesign = sellerProfileContainer.classList.contains('spp-redesigned');
+
                 // Get seller rating
-                let rating = sellerPage.getElementById('seller-feedback-summary');
+                let rating = sellerPage.getElementById(isRedesign ? 'seller-feedback-summary-rd' : 'seller-feedback-summary');
  
                 let ratingPercentage = '';
                 let ratingCount = '';
@@ -108,13 +119,18 @@
                 const sellerInfoRating = document.createTextNode(sellerInfoRatingText);
                 sellerInfoLink.appendChild(sellerInfoRating);
  
+                let sellerCountry = '';
+                if (isRedesign) {
+                  sellerCountry = sellerPage.querySelector('#page-section-detail-seller-info .a-box-inner .a-row:last-of-type span').textContent.toUpperCase();
+                } else {
                 // Get seller country & flag
                 const sellerUl = sellerPage.querySelectorAll('ul.a-unordered-list.a-nostyle.a-vertical'); //get all ul
                 const sellerUlLast = sellerUl[sellerUl.length - 1]; //get last list
                 const sellerLi = sellerUlLast.querySelectorAll('li'); //get all li
                 const sellerLiLast = sellerLi[sellerLi.length - 1]; //get last li
-                const sellerCountry = sellerLiLast.textContent.toUpperCase();
- 
+                sellerCountry = sellerLiLast.textContent.toUpperCase();
+                }
+
                 if (sellerCountry.length == 2) {
                   const flag = document.createElement('span');
                   flag.textContent = getFlagEmoji(sellerCountry);
@@ -144,7 +160,14 @@
  
             } else {
               const sellerInfoDiv = document.createElement('div');
-              let soldbyAmazon = productPage.querySelector('#merchant-info').textContent.trim();
+              let soldbyAmazon = '';
+              if (productPage.querySelector('#tabular-buybox .tabular-buybox-text')) {
+                soldbyAmazon = productPage.querySelector('#tabular-buybox .tabular-buybox-container > .tabular-buybox-text:nth-of-type(4)').textContent.trim();
+              } else if (!productPage.querySelector('#merchant-info')) {
+                soldbyAmazon = '?';
+              } else {
+                soldbyAmazon = productPage.querySelector('#merchant-info').textContent.trim();
+              }
               if (!soldbyAmazon.replace(/\s/g, '').length) {
                 soldbyAmazon = '? ? ?';
               } else {
