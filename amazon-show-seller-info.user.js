@@ -5,18 +5,18 @@
 // @name:es         Amazon - Mostrar información del vendedor
 // @name:it         Amazon - Mostra info venditore
 // @description     Shows name, country of origin and ratings for third party sellers on Amazon (and highlights Chinese sellers)
-// @description:de  Zeigt Name, Herkunftsland und Bewertungen von Drittanbietern auf Amazon (und hebt chinesische Anbieter hervor)
+// @description:de  Zeigt Name, Herkunftsland und Bewertungen von Drittanbietern auf Amazon an (und hebt chinesische Anbieter hervor)
 // @description:fr  Montre le nom, le pays d'origine et les évaluations des vendeurs tiers sur Amazon (et met en évidence les vendeurs chinois)
 // @description:es  Muestra el nombre, el país de origen y las valoraciones de los vendedores de terceros en el Amazon (y destaca los vendedores chinos)
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.1.4
+// @version         1.1.5
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/amazon-show-seller-info-userscript
 // @supportURL      https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/issues
-// @updateURL       https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/raw/main/amazon-show-seller-info.meta.js
-// @downloadURL     https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/raw/main/amazon-show-seller-info.user.js
+// @updateURL       https://greasyfork.org/scripts/402064/code/script.meta.js
+// @downloadURL     https://greasyfork.org/scripts/402064/code/script.user.js
 // @icon            https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/raw/main/icon.png
 // @icon64          https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/raw/main/icon64.png
 // @match           https://smile.amazon.co.uk/*
