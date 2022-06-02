@@ -19,13 +19,20 @@
 // @downloadURL     https://greasyfork.org/scripts/402064/code/script.user.js
 // @icon            https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/raw/main/icon.png
 // @icon64          https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/raw/main/icon64.png
+// @match           https://www.amazon.co.jp/*
 // @match           https://smile.amazon.co.uk/*
 // @match           https://www.amazon.co.uk/*
+// @match           https://smile.amazon.com/*
+// @match           https://www.amazon.com/*
+// @match           https://www.amazon.com.mx/*
+// @match           https://www.amazon.com.tr/*
 // @match           https://smile.amazon.de/*
 // @match           https://www.amazon.de/*
 // @match           https://www.amazon.es/*
 // @match           https://www.amazon.fr/*
 // @match           https://www.amazon.it/*
+// @match           https://www.amazon.nl/*
+// @match           https://www.amazon.se/*
 // @compatible      firefox Tested on Firefox v90 with Violentmonkey v2.13.0, Tampermonkey v4.13 and Greasemonkey v4.11
 // @compatible      chrome Tested on Chrome v94  with Violentmonkey v2.13.0 and Tampermonkey v4.13
 // ==/UserScript==
