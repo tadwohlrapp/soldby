@@ -39,236 +39,630 @@
 
 (function () {
   'use strict';
- 
-  const highlightedCountries = ['CN', 'HK'];
+
+  const options = {
+    highlightedCountries: ['?', 'CN', 'HK']
+  };
   // Country codes as per ISO 3166-1 alpha-2
   // Set to [] to highlight no sellers at all
   // Set to ['FR'] to highlight sellers from France
   // Default: ['CN', 'HK']
- 
-  // Check URLs for page type (search result page and best sellers page)
-  const isSearchResultPage = window.location.href.match(/.*\.amazon\..*\/s\?.*/);
-  const isBestsellersPage = window.location.href.match(/.*\.amazon\..*\/gp\/bestsellers\/.*/) || window.location.href.match(/.*\.amazon\..*\/Best\-Sellers\-.*/);
- 
-  if (isSearchResultPage || isBestsellersPage) {
-    function showSellerCountry() {
- 
-      const products = isSearchResultPage ?
-        document.querySelectorAll('h2.a-size-mini.a-spacing-none.a-color-base a.a-link-normal.a-text-normal:not([data-seller])') :
-        document.querySelectorAll('span.aok-inline-block.zg-item>a.a-link-normal:not([data-seller])');
- 
-      for (let i = 0; i < products.length; i++) {
-        const product = products[i];
-        product.setAttribute('data-seller', 'set');
- 
-        if (product.href && product.href.match(/.*\.amazon\..*\/(.*\/dp|gp\/slredirect)\/.*/)) {
- 
-          fetch(product.href).then(function (response) {
-            if (response.ok) {
-              return response.text();
-            }
-          }).then(function (html) {
-            const productPage = parse(html);
-            const thirdPartySellerSelectors = [
-              '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #sellerProfileTriggerId',
-              '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #merchant-info a:first-of-type',
-              '#newAccordionRow #sellerProfileTriggerId',
-              '#newAccordionRow #merchant-info a:first-of-type'
-            ]
-            const thirdPartySeller = productPage.querySelector(String(thirdPartySellerSelectors));
-            const isThirdPartySeller = thirdPartySeller !== null;
- 
-            if (isThirdPartySeller) {
-              thirdPartySeller.textContent = thirdPartySeller.textContent.trim();
-              thirdPartySeller.href = thirdPartySeller.href.replace(/sp\?.*/g, 'sp?' + thirdPartySeller.href.match(/(seller=[^&]*)/)[1]);
-              const sellerInfoLink = document.createElement('a');
-              sellerInfoLink.href = thirdPartySeller.href;
-              const sellerInfoContent = document.createTextNode(thirdPartySeller.textContent);
-              sellerInfoLink.appendChild(sellerInfoContent);
-              sellerInfoLink.classList.add('seller-info');
- 
-              isSearchResultPage ?
-                product.parentNode.parentNode.appendChild(sellerInfoLink) :
-                product.parentNode.insertBefore(sellerInfoLink, product.parentNode.querySelector('.a-icon-row.a-spacing-none'));
- 
- 
-              fetch(thirdPartySeller.href).then(function (response) {
-                if (response.ok) {
-                  return response.text();
-                } else if (response.status === 503) {
-                  throw new Error('Too many requests 🙄 Amazon blocked seller page');
-                } else {
-                  throw new Error(response.status);
-                }
-              }).then(function (html) {
-                const sellerPage = parse(html);
 
-                // Detect Amazon's 2022-04-20 redesign
-                const sellerProfileContainer = sellerPage.getElementById('seller-profile-container');
-                const isRedesign = sellerProfileContainer.classList.contains('spp-redesigned');
+  function showSellerCountry() {
 
-                // Get seller rating
-                let rating = sellerPage.getElementById(isRedesign ? 'seller-feedback-summary-rd' : 'seller-feedback-summary');
- 
-                let ratingPercentage = '';
-                let ratingCount = '';
-                if (sellerPage.getElementById('feedback-no-rating')) {
-                  ratingPercentage = sellerPage.getElementById('feedback-no-rating').textContent;
-                } else {
-                  ratingPercentage = sellerPage.getElementsByClassName('feedback-detail-description')[0].textContent.match(/\d+%/);
-                }
-                if (rating.contains(sellerPage.getElementById('feedback-no-review'))) {
-                  ratingCount = sellerPage.getElementById('feedback-no-review').textContent;
-                } else {
-                  ratingCount = sellerPage.getElementsByClassName('feedback-detail-description')[0].textContent.match(/\(([^)]+)\)/)[1];
-                }
-                const sellerInfoRatingText = ' (' + ratingPercentage + ' | ' + ratingCount + ')';
-                const sellerInfoRating = document.createTextNode(sellerInfoRatingText);
-                sellerInfoLink.appendChild(sellerInfoRating);
- 
-                let sellerCountry = '';
-                if (isRedesign) {
-                  sellerCountry = sellerPage.querySelector('#page-section-detail-seller-info .a-box-inner .a-row:last-of-type span').textContent.toUpperCase();
-                } else {
-                // Get seller country & flag
-                const sellerUl = sellerPage.querySelectorAll('ul.a-unordered-list.a-nostyle.a-vertical'); //get all ul
-                const sellerUlLast = sellerUl[sellerUl.length - 1]; //get last list
-                const sellerLi = sellerUlLast.querySelectorAll('li'); //get all li
-                const sellerLiLast = sellerLi[sellerLi.length - 1]; //get last li
-                sellerCountry = sellerLiLast.textContent.toUpperCase();
-                }
+    // Gets the ASIN for every visible product and sets it as "data-asin" attribute
+    getAsin();
 
-                if (sellerCountry.length == 2) {
-                  const flag = document.createElement('span');
-                  flag.textContent = getFlagEmoji(sellerCountry);
-                  flag.title = sellerCountry;
-                  flag.classList.add('seller-flag');
-                  sellerInfoLink.prepend(flag);
- 
-                  // Highlight sellers from countries defined in 'highlightedCountries'
-                  if (highlightedCountries.includes(sellerCountry)) {
-                    const outercontainer = isSearchResultPage ?
-                      product.closest('.a-carousel-card, .s-result-item') :
-                      product.closest('.zg-item-immersion');
- 
-                    const productImage = isSearchResultPage ?
-                      outercontainer.querySelector('.s-image') :
-                      outercontainer.querySelector('.zg-text-center-align img');
- 
-                    outercontainer.style.background = 'linear-gradient(180deg, rgba(222,41,14,0.33) 0%, rgba(222,41,14,0) 100%)';
-                    productImage.style.opacity = '0.66';
-                  }
-                } else {
-                  console.info('Wait, that\'s illegal! 🚨 Seller "' + thirdPartySeller.textContent + '" (' + thirdPartySeller.href + ') has no valid imprint!');
-                }
-              }).catch(function (err) {
-                console.warn('Could not fetch seller data for "' + thirdPartySeller.textContent + '" (' + thirdPartySeller.href + '): ', err);
-              });
- 
-            } else {
-              const sellerInfoDiv = document.createElement('div');
-              let soldbyAmazon = '';
-              if (productPage.querySelector('#tabular-buybox .tabular-buybox-text')) {
-                soldbyAmazon = productPage.querySelector('#tabular-buybox .tabular-buybox-container > .tabular-buybox-text:nth-of-type(4)').textContent.trim();
-              } else if (!productPage.querySelector('#merchant-info')) {
-                soldbyAmazon = '?';
-              } else {
-                soldbyAmazon = productPage.querySelector('#merchant-info').textContent.trim();
-              }
-              if (!soldbyAmazon.replace(/\s/g, '').length) {
-                soldbyAmazon = '? ? ?';
-              } else {
-                const svg = document.createElement('span');
-                svg.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="12" height="12" style="vertical-align: bottom;margin-right: 4px;"><path fill="#f90" d="M110.2 103.3c-51.8 24.7-84 4-104.6-8.5-1.2-.8-3.4.2-1.5 2.4 6.8 8.3 29.3 28.3 58.6 28.3 29.4 0 46.9-16 49-18.8 2.2-2.7.7-4.3-1.5-3.4zm14.5-8c-1.3-1.8-8.4-2.1-12.9-1.6-4.4.5-11.1 3.3-10.5 4.9.3.6.9.3 4 0 3-.3 11.6-1.3 13.4 1 1.8 2.4-2.7 13.6-3.6 15.4-.8 1.8.3 2.3 1.8 1 1.5-1.1 4.2-4.3 6-8.7 1.8-4.4 2.9-10.6 1.8-12zm0 0"></path><path fill-rule="evenodd" d="M75.4 53c0 6.5.1 11.9-3.2 17.6-2.6 4.7-6.8 7.6-11.4 7.6-6.4 0-10.1-4.9-10.1-12 0-14.2 12.6-16.8 24.7-16.8zM92 93.5c-1.1 1-2.7 1-4 .4-5.4-4.6-6.4-6.7-9.5-11-9 9.2-15.5 12-27.3 12-14 0-24.9-8.6-24.9-25.9 0-13.5 7.3-22.6 17.7-27.1 9-4 21.6-4.7 31.3-5.8V34c0-4 .3-8.7-2-12-2-3.1-6-4.4-9.4-4.4-6.3 0-12 3.3-13.3 10-.3 1.5-1.4 3-3 3l-16-1.7c-1.4-.3-2.9-1.4-2.5-3.5C32.9 6 50.5 0 66.3 0c8.1 0 18.7 2.1 25 8.3 8.1 7.5 7.4 17.6 7.4 28.5v26c0 7.7 3.2 11.1 6.2 15.3 1.1 1.5 1.3 3.3 0 4.4L92 93.5"></path></svg>';
-                sellerInfoDiv.appendChild(svg);
-              }
-              const sellerInfoContent = document.createTextNode(soldbyAmazon);
-              sellerInfoDiv.appendChild(sellerInfoContent);
-              sellerInfoDiv.classList.add('seller-info');
- 
-              isSearchResultPage ?
-                product.parentNode.parentNode.appendChild(sellerInfoDiv) :
-                product.parentNode.insertBefore(sellerInfoDiv, product.parentNode.querySelector('.a-icon-row.a-spacing-none'));
-            }
- 
-          }).catch(function (err) {
-            // There was an error
-            console.warn('Something went wrong fetching ' + product.href, err);
-          });
+    // Identify products by looking for "data-asin" attribute
+    const productsWithAsinSelectors = [
+      'div[data-asin]',
+      'not([data-asin=""])',
+      'not([data-seller-name])',
+      'not([data-uuid*=s-searchgrid-carousel])',
+      'not([role="img"])',
+      'not(#averageCustomerReviews)',
+      'not(#detailBullets_averageCustomerReviews)',
+      'not(.inline-twister-swatch)',
+      'not(.contributorNameID)',
+      'not(.a-hidden)',
+      'not(.rpi-learn-more-card-content)',
+      'not(#reviews-image-gallery-container)',
+      'not([class*=_cross-border-widget_style_preload-widget])',
+      'not([data-video-url])'
+    ];
+    const products = document.querySelectorAll(productsWithAsinSelectors.join(':'));
+
+    // If no new products are found, return.
+    if (products.length == 0) return;
+
+    products.forEach((product) => {
+
+      // Give each product the data-seller-name attribute to prevent re-capturing.
+      product.dataset.sellerName = 'loading...';
+
+      createInfoBox(product);
+
+      getSellerFromProductPage(product);
+
+    });
+  }
+
+  // Run script once on document ready
+  showSellerCountry();
+
+  // Initialize new MutationObserver
+  const mutationObserver = new MutationObserver(showSellerCountry);
+
+  // Let MutationObserver target the grid containing all thumbnails
+  const targetNode = document.body;
+
+  const mutationObserverOptions = {
+    childList: true,
+    subtree: true
+  }
+
+  // Run MutationObserver
+  mutationObserver.observe(targetNode, mutationObserverOptions);
+
+  function parse(html) {
+    const parser = new DOMParser();
+    return parser.parseFromString(html, 'text/html');
+  }
+
+  function getAsin() {
+
+    // Check current page for products (without "data-asin" attribute)
+    const productSelectors = [
+      '.a-carousel-card > div:not([data-asin])',
+      '.octopus-pc-item:not([data-asin])',
+      'li[class*=ProductGridItem__]:not([data-asin])',
+      'div[class*=_octopus-search-result-card_style_apbSearchResultItem]:not([data-asin])',
+      '.sbv-product:not([data-asin])',
+      '.a-cardui #gridItemRoot:not([data-asin])'
+    ];
+    const products = document.querySelectorAll(String(productSelectors));
+
+    // If no new products are found, return.
+    if (products.length == 0) return;
+
+    products.forEach((product) => {
+
+      // Take the first link but not if it's inside the "Bestseller" container (links to bestsellers page instead of product page) and not if it has the popover-trigger class, as its href is just "javascript:void(0)" (hidden feedback form on sponsored products)
+      const link = product.querySelector('a:not(.s-grid-status-badge-container > a):not(.a-popover-trigger)');
+
+      // If link cannot be found, return
+      if (!link) return;
+
+      link.href = decodeURIComponent(link.href);
+      let asin = '';
+      const searchParams = new URLSearchParams(link.href);
+      if (searchParams.get('pd_rd_i')) {
+        asin = searchParams.get('pd_rd_i')
+      } else if (/\/dp\/(.*?)($|\?|\/)/.test(link.href)) {
+        asin = link.href.match(/\/dp\/(.*?)($|\?|\/)/)[1]
+      }
+      product.dataset.asin = asin;
+    });
+  }
+
+  function getSellerFromProductPage(product) {
+    // fetch seller, get data, set attributes
+
+    if (!product.dataset.asin) return;
+
+    const link = window.location.origin + '/dp/' + product.dataset.asin + '?psc=1';
+
+    fetch(link).then(function (response) {
+      if (response.ok) {
+        return response.text();
+      }
+    }).then(function (html) {
+      const productPage = parse(html);
+
+      let sellerId, sellerName;
+
+      // weed out various special product pages:
+      const specialPageSelectors = [
+        '#gc-detail-page', /* gift card sold by amazon */
+        '.reload_gc_balance', /* reload amazon balance */
+        '#dp.digitaltextfeeds, #dp.magazine, #dp.ebooks, #dp.audible', /* magazines, subscriptions, audible, etc */
+        '.av-page-desktop, .avu-retail-page' /* prime video */
+      ];
+
+      if (productPage.querySelector(String(specialPageSelectors))) {
+        sellerName = 'Amazon';
+      } else {
+        // find third party seller mention on product page
+        const thirdPartySellerSelectors = [
+          '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #sellerProfileTriggerId',
+          '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #merchant-info a:first-of-type',
+          '#newAccordionRow #sellerProfileTriggerId',
+          '#newAccordionRow #merchant-info a:first-of-type'
+        ]
+
+        const thirdPartySeller = productPage.querySelector(String(thirdPartySellerSelectors));
+
+        if (thirdPartySeller) {
+
+          // Get seller ID
+          const searchParams = new URLSearchParams(thirdPartySeller.href);
+          sellerId = searchParams.get('seller');
+          const sellerUrl = window.location.origin + '/sp?seller=' + sellerId;
+
+          // Get seller Name
+          sellerName = thirdPartySeller.textContent.trim();
+        } else {
+
+          let queryMerchantName = ' ';
+          if (productPage.querySelector('#tabular-buybox .tabular-buybox-text')) {
+            queryMerchantName = productPage.querySelector('#tabular-buybox .tabular-buybox-container > .tabular-buybox-text:last-of-type').textContent.trim();
+          } else if (productPage.querySelector('#merchant-info')) {
+            queryMerchantName = productPage.querySelector('#merchant-info').textContent.trim();
+          }
+
+          if (queryMerchantName.replace(/\s/g, '').length) {
+            sellerName = 'Amazon';
+          } else {
+            sellerName = '? ? ?';
+          }
+        }
+      }
+
+      // Set data-seller-name attribute
+      product.dataset.sellerName = sellerName;
+
+      if (sellerId) {
+        // Set data-seller-id attribute
+        product.dataset.sellerId = sellerId;
+      }
+
+      setSellerDetails(product);
+
+    }).catch(function (err) {
+      console.warn('Something went wrong fetching ' + link, err);
+    });
+  }
+
+  function setSellerDetails(product) {
+    if (product.dataset.sellerName.includes('Amazon') || product.dataset.sellerName == '? ? ?') {
+      populateInfoBox(product);
+      return; // if seller is Amazon or unknown, no further steps are needed
+    }
+
+    // fetch seller details from seller-page
+
+    // build seller link
+    const link = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
+
+    fetch(link).then(function (response) {
+      if (response.ok) {
+        return response.text();
+      } else if (response.status === 503) {
+        product.dataset.blocked = true;
+        populateInfoBox(product);
+        throw new Error('🙄 Too many requests. Amazon blocked seller page. Please try again in a few minutes.');
+      } else {
+        throw new Error(response.status);
+      }
+    }).then(function (html) {
+
+      let seller = getSellerDetailsFromSellerPage(parse(html));
+      // --> seller.country      (e.g. 'US')
+      // --> seller.rating.score (e.g. '69%')
+      // --> seller.rating.count (e.g. '420')
+
+      // Set attributes: data-seller-country, data-seller-rating-score and data-seller-rating-count
+      product.dataset.sellerCountry = seller.country;
+      product.dataset.sellerRatingScore = seller.rating.score;
+      product.dataset.sellerRatingCount = seller.rating.count;
+
+      highlightProduct(product);
+      populateInfoBox(product);
+
+    }).catch(function (err) {
+      console.warn('Could not fetch seller data for "' + product.dataset.sellerName + '" (' + link + '):', err);
+    });
+
+  }
+
+  function getSellerDetailsFromSellerPage(sellerPage) {
+    // Detect Amazon's 2022-04-20 redesign
+    const sellerProfileContainer = sellerPage.getElementById('seller-profile-container');
+    const isRedesign = sellerProfileContainer.classList.contains('spp-redesigned');
+
+    const country = getSellerCountryFromSellerPage(sellerPage, isRedesign); // returns DE
+    const rating = getSellerRatingFromSellerPage(sellerPage, isRedesign); // returns 91%
+
+    return { country, rating };
+  }
+
+  function getSellerCountryFromSellerPage(sellerPage, isRedesign) {
+    let country;
+    if (isRedesign) {
+      country = sellerPage.querySelector('#page-section-detail-seller-info .a-box-inner .a-row:last-of-type span')?.textContent.toUpperCase();
+    } else {
+      try {
+        const sellerUl = sellerPage.querySelectorAll('ul.a-unordered-list.a-nostyle.a-vertical'); //get all ul
+        const sellerUlLast = sellerUl[sellerUl.length - 1]; //get last list
+        const sellerLi = sellerUlLast.querySelectorAll('li'); //get all li
+        const sellerLiLast = sellerLi[sellerLi.length - 1]; //get last li
+        country = sellerLiLast.textContent.toUpperCase();
+      } catch {
+        return '?';
+      }
+    }
+    return (/^[A-Z]{2}$/.test(country)) ? country : '?';
+  }
+
+  function getSellerRatingFromSellerPage(sellerPage, isRedesign) {
+    let idSuffix = isRedesign ? '-rd' : '';
+    if (sellerPage.getElementById('sellerName' + idSuffix).textContent.includes('Amazon')) {
+      return false; // seller is Amazon subsidiary and doesn't display ratings
+    } else {
+      let text = sellerPage.getElementById('seller-feedback-summary' + idSuffix).textContent;
+      let regex = /(\d+%).*?\((\d+)/;
+      let zeroPercent = '0%';
+
+      // Turkish places the percentage sign in front (e.g. %89)
+      if (document.documentElement.lang === 'tr-tr') {
+        regex = /(%\d+).*?\((\d+)/;
+        zeroPercent = '%0';
+      }
+
+      let rating = text.match(regex);
+      let score = rating ? rating[1] : zeroPercent;
+      let count = rating ? rating[2] : '0';
+
+      return { score, count };
+    }
+  }
+
+  function highlightProduct(product) {
+    if (options.highlightedCountries.includes(product.dataset.sellerCountry)) {
+      // Highlight sellers from countries defined in 'options.highlightedCountries'
+      product.classList.add('product--highlight');
+    }
+  }
+
+  function createInfoBox(product) {
+    const infoBoxCt = document.createElement('div');
+    infoBoxCt.classList.add('seller-info-ct');
+
+    if (product.offsetWidth < 400) {
+      infoBoxCt.classList.add('a-size-small');
+    }
+
+    const infoBox = document.createElement('div');
+    infoBox.classList.add('seller-info');
+
+    const icon = document.createElement('div');
+    icon.classList.add('seller-icon', 'seller-loading');
+    infoBox.appendChild(icon);
+
+    const text = document.createElement('div');
+    text.classList.add('seller-text');
+    text.textContent = product.dataset.sellerName;
+    infoBox.appendChild(text);
+
+    infoBoxCt.appendChild(infoBox);
+
+    let productTitle = findTitle(product);
+
+    if (productTitle) {
+      productTitle.parentNode.insertBefore(infoBoxCt, productTitle.nextSibling);
+    } else {
+      product.appendChild(infoBoxCt);
+    }
+
+    fixHeights(product);
+  }
+
+  function populateInfoBox(product) {
+    const container = product.querySelector('.seller-info-ct');
+    const infoBox = container.querySelector('.seller-info');
+    const icon = container.querySelector('.seller-icon');
+    const text = container.querySelector('.seller-text');
+
+    // remove loading spinner
+    icon.classList.remove('seller-loading');
+
+    // replace "loading..." with real seller name
+    text.textContent = product.dataset.sellerName;
+
+    if (product.dataset.sellerId && product.dataset.sellerId !== 'Amazon') {
+      // Create link to seller profile if sellerId is valid
+      const anchor = document.createElement('a');
+      anchor.classList.add('seller-link');
+      anchor.appendChild(infoBox);
+      container.appendChild(anchor);
+      anchor.href = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
+    }
+
+    if (product.dataset.blocked) {
+      icon.textContent = '⚠️';
+      icon.style.fontSize = "1.5em";
+      infoBox.title = 'Error 503: Too many requests. Amazon blocked seller page. Please try again in a few minutes.';
+      return;
+    }
+
+    if (product.dataset.sellerName.includes('Amazon')) {
+      // Seller is Amazon or one of its subsidiaries (Warehouse, UK, US, etc.)
+      const amazonIcon = document.createElement('img');
+      amazonIcon.src = '/favicon.ico';
+      icon.appendChild(amazonIcon);
+      infoBox.title = product.dataset.sellerName;
+      return;
+    }
+
+    // 1. Set icon, create infoBox title (if country known)
+    if (product.dataset.sellerCountry && product.dataset.sellerCountry != '?') {
+      icon.textContent = getFlagEmoji(product.dataset.sellerCountry);
+      infoBox.title = (new Intl.DisplayNames([document.documentElement.lang], { type: 'region' })).of(product.dataset.sellerCountry) + ' | ';
+    } else {
+      icon.textContent = '❓';
+      icon.style.fontSize = "1.5em";
+    }
+
+    if (!product.dataset.sellerId) {
+      console.error('No seller found', product);
+      return;
+    }
+
+    // 2. Append name to infoBox title
+    infoBox.title += product.dataset.sellerName;
+
+    // 3. Append rating to text and infoBox title
+    const ratingText = `(${product.dataset.sellerRatingScore} | ${product.dataset.sellerRatingCount})`;
+    text.textContent += ` ${ratingText}`;
+    infoBox.title += ` ${ratingText}`;
+  }
+
+  function findTitle(product) {
+    //TODO switch case
+    try {
+      let title;
+      if (product.dataset.avar) {
+        title = product.querySelector('.a-color-base.a-spacing-none.a-link-normal');
+      } else if (product.parentElement.classList.contains('a-carousel-card')) {
+        if (product.classList.contains('a-section') && product.classList.contains('a-spacing-none')) {
+          title = product.querySelector('.a-link-normal');
+        } else if (product.querySelector('.a-truncate:not([data-a-max-rows="1"])') !== null) {
+          title = product.querySelector('.a-truncate');
+        } else if (product.querySelector('h2') !== null) {
+          title = product.getElementsByTagName("h2")[0];
+        } else {
+          title = product.querySelectorAll('.a-link-normal')[1];
+        }
+      } else if (product.id == 'gridItemRoot' || product.closest('#zg') !== null) {
+        title = product.querySelectorAll('.a-link-normal')[1];
+      } else if (product.classList.contains('octopus-pc-item-v3')) {
+        title = product.querySelectorAll('.octopus-pc-asin-title, .octopus-pc-dotd-title')[0];
+      } else if (product.classList.contains('octopus-pc-lightning-deal-item-v3')) {
+        title = product.querySelector('.octopus-pc-deal-title');
+      } else if (product.querySelector('.sponsored-products-truncator-truncated') !== null) {
+        title = product.querySelector('.sponsored-products-truncator-truncated');
+      } else {
+        title = product.getElementsByTagName("h2")[0];
+      }
+      return title;
+    } catch (error) {
+      console.error(error, product);
+    }
+  }
+
+  function fixHeights(product) {
+    // fixes for grid-item:
+    if (product.id == 'gridItemRoot') {
+      product.style.height = product.offsetHeight + 20 + 'px';
+    }
+
+    if (product.classList.contains('octopus-pc-item')) {
+
+      const els = document.querySelectorAll('.octopus-pc-card-height-v3, .octopus-dotd-height, .octopus-lightning-deal-height');
+      for (const el of els) {
+        if (!el.getAttribute('style')) el.style.height = el.offsetHeight + 30 + 'px';
+      }
+
+      const text = product.querySelectorAll('.octopus-pc-deal-block-section, .octopus-pc-dotd-info-section')[0];
+      if (text) text.style.height = text.offsetHeight + 30 + 'px';
+
+      if (product.classList.contains('octopus-pc-lightning-deal-item-v3') && !product.dataset.height) {
+        product.style.setProperty('height', product.offsetHeight + 30 + 'px', 'important');
+        product.dataset.height = 'set';
+      }
+    }
+
+    if (product.closest('#rhf') !== null && product.closest('.a-carousel-viewport') !== null) {
+      const els = document.querySelectorAll('.a-carousel-viewport, .a-carousel-left, .a-carousel-right');
+      for (const el of els) {
+        if (el.getAttribute('style') && !el.dataset.height) {
+          el.style.height = el.offsetHeight + 30 + 'px';
+          el.dataset.height = 'set';
         }
       }
     }
- 
-    // Run script once on document ready
-    showSellerCountry();
- 
-    // Initialize new MutationObserver
-    const mutationObserver = new MutationObserver(showSellerCountry);
- 
-    // Let MutationObserver target the grid containing all thumbnails
-    const targetNode = document.body;
- 
-    const mutationObserverOptions = {
-      childList: true,
-      subtree: true
-    }
- 
-    // Run MutationObserver
-    mutationObserver.observe(targetNode, mutationObserverOptions);
- 
-    function parse(html) {
-      const parser = new DOMParser();
-      return parser.parseFromString(html, 'text/html');
-    }
- 
-    // Country Code to Flag Emoji (Source: https://dev.to/jorik/country-code-to-flag-emoji-a21)
-    function getFlagEmoji(countryCode) {
-      const codePoints = countryCode
-        .split('')
-        .map(char =>  127397 + char.charCodeAt());
-      return String.fromCodePoint(...codePoints);
-    }
 
-    function addGlobalStyle(css) {
-      const head = document.getElementsByTagName('head')[0];
-      if (!head) { return; }
-      const style = document.createElement('style');
-      style.innerHTML = css;
-      head.appendChild(style);
+    // hide stupid blocking links on sponsored products
+    if (product.closest('.sbx-desktop') !== null) {
+      const links = product.querySelectorAll('a:empty');
+      links.forEach((link) => {
+        link.style.height = 0;
+      });
     }
- 
-    // Add Google's own CSS used for image dimensions
-    addGlobalStyle(`
-    .seller-info {
-        display: inline-block;
-        background: #fff;
-        color: #1d1d1d !important;
-        font-size: 11px;
-        line-height: 15px;
-        padding: 2px 5px;
-        font-weight: 400;
-        border: 1px solid #E0E0E0;
-        margin-top: 4px;
-        height: 22px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-    }
-    a.seller-info:hover {
-        border-color: #D0D0D0;
-        text-decoration: none;
-        background-color: #F3F3F3;
-    }
-    span.seller-flag {
-        font-size: 23px;
-        line-height: 15px;
-        vertical-align: text-top;
-        margin-right: 5px;
-    }
-    #zg-center-div .zg-item-immersion {
-        height: 390px;
-    }
-    `);
   }
+
+  // Country Code to Flag Emoji (Source: https://dev.to/jorik/country-code-to-flag-emoji-a21)
+  function getFlagEmoji(countryCode) {
+    const codePoints = countryCode
+      .split('')
+      .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+  }
+
+  function addGlobalStyle(css) {
+    const head = document.getElementsByTagName('head')[0];
+    if (!head) return;
+    const style = document.createElement('style');
+    style.innerHTML = css;
+    head.appendChild(style);
+  }
+
+  addGlobalStyle(`
+  .seller-info-ct {
+    cursor: default;
+    margin-top: 4px;
+  }
+  
+  .seller-info {
+    display: inline-flex;
+    gap: 4px;
+    background: #fff;
+    font-size: 0.9em;
+    padding: 2px 4px;
+    border: 1px solid #d5d9d9;
+    border-radius: 4px;
+    max-width: 100%;
+  }
+  
+  .seller-loading {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    border: 3px solid rgb(255 153 0 / 30%);
+    border-radius: 50%;
+    border-top-color: #ff9900;
+    animation: spin 1s ease-in-out infinite;
+    margin: 1px 3px 0;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .seller-icon {
+    vertical-align: text-top;
+    text-align: center;
+    font-size: 1.8em;
+  }
+  
+  .seller-icon svg {
+    width: 0.8em;
+    height: 0.7em;
+  }
+  
+  .seller-icon img {
+    width: 0.82em;
+    height: 0.82em;
+  }
+  
+  .seller-text {
+    color: #1d1d1d !important;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  
+  a.seller-link:hover .seller-info {
+    box-shadow: 0 2px 5px 0 rgb(213 217 217 / 50%);
+    background-color: #f7fafa;
+    border-color: #d5d9d9;
+  }
+  
+  a.seller-link:hover .seller-name {
+    text-decoration: underline;
+  }
+  
+  .product--highlight .s-card-container,
+  .product--highlight[data-avar],
+  .product--highlight.sbv-product,
+  .a-carousel-has-buttons .product--highlight,
+  #gridItemRoot.product--highlight,
+  #gridItemRoot.product--highlight .a-cardui,
+  .product--highlight .octopus-pc-item-image-section,
+  .product--highlight .octopus-pc-asin-info-section,
+  .product--highlight .octopus-pc-deal-block-section,
+  .product--highlight .octopus-pc-dotd-info-section,
+  .acswidget-carousel .product--highlight .acs-product-block {
+    background-color: #f9e3e4;
+    border-color: #f9e3e4;
+  }
+  
+  #gridItemRoot.product--highlight,
+  .product--highlight .s-card-border {
+    border-color: #e3abae;
+  }
+  
+  .product--highlight .s-card-drop-shadow {
+    box-shadow: none;
+    border: 1px solid #e3abae;
+  }
+  
+  .product--highlight .s-card-drop-shadow .s-card-border {
+    border-color: #f9e3e4;
+  }
+  
+  .product--highlight[data-avar],
+  .a-carousel-has-buttons .product--highlight {
+    padding: 0 2px;
+    box-sizing: content-box;
+  }
+  
+  .product--highlight.zg-carousel-general-faceout,
+  #rhf .product--highlight {
+    box-shadow: inset 0 0 0 1px #e3abae;
+    padding: 0 6px;
+    word-break: break-all;
+  }
+  
+  .product--highlight.zg-carousel-general-faceout img,
+  #rhf .product--highlight img {
+    max-width: 100% !important;
+  }
+  
+  #rhf .product--highlight img {
+    margin: 1px auto -1px;
+  }
+  
+  .product--highlight a,
+  .product--highlight .a-color-base,
+  .product--highlight .a-price[data-a-color='base'] {
+    color: #842029 !important;
+  }
+  
+  #gridItemRoot .seller-info {
+    margin-bottom: 6px;
+  }
+  
+  .octopus-pc-item-v3 .seller-info-ct,
+  .octopus-pc-lightning-deal-item-v3 .seller-info-ct {
+    padding: 4px 20px 0;
+  }
+  
+  .sbx-desktop .seller-info-ct {
+    margin: 0;
+  }
+  
+  .sp-shoveler .seller-info-ct {
+    margin: -2px 0 3px;
+  }
+  
+  .p13n-sc-shoveler .seller-info-ct {
+    margin: 0;
+  }
+  
+  .octopus-pc-item-image-section-v3 {
+    text-align: center;
+  }
+  #rhf .a-section.a-spacing-mini {
+    text-align: center;
+  }
+  
+  a:hover.a-color-base,
+  a:hover.seller-link {
+    text-decoration: none;
+  }
+  
+  `);
 })();
