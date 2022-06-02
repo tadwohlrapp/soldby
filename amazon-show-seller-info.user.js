@@ -33,8 +33,8 @@
 // @match           https://www.amazon.it/*
 // @match           https://www.amazon.nl/*
 // @match           https://www.amazon.se/*
-// @compatible      firefox Tested on Firefox v90 with Violentmonkey v2.13.0, Tampermonkey v4.13 and Greasemonkey v4.11
-// @compatible      chrome Tested on Chrome v94  with Violentmonkey v2.13.0 and Tampermonkey v4.13
+// @compatible      firefox Tested on Firefox v101 with Violentmonkey v2.13.0, Tampermonkey v4.17.6161 and Greasemonkey v4.11
+// @compatible      chrome Tested on Chrome v101  with Violentmonkey v2.13.0 and Tampermonkey v4.16.1
 // ==/UserScript==
 
 (function () {
