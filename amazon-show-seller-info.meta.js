@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.1.5
+// @version         1.2.0
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/amazon-show-seller-info-userscript
 // @supportURL      https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/issues
