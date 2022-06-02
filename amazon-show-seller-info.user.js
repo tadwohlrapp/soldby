@@ -82,8 +82,11 @@
 
       createInfoBox(product);
 
-      getSellerFromProductPage(product);
-
+      if (localStorage.getItem(asinKey(product))) {
+        getSellerFromLocalStorage(product);
+      } else {
+        getSellerFromProductPage(product);
+      }
     });
   }
 
@@ -145,8 +148,15 @@
     });
   }
 
+  function getSellerFromLocalStorage(product) {
+    const {sid: sellerId, sn: sellerName} = JSON.parse(localStorage.getItem(asinKey(product)));
+    if (sellerId) product.dataset.sellerId = sellerId;
+    product.dataset.sellerName = sellerName;
+    setSellerDetails(product);
+  }
+
   function getSellerFromProductPage(product) {
-    // fetch seller, get data, set attributes
+    // fetch seller, get data, save in local storage, set attributes
 
     if (!product.dataset.asin) return;
 
@@ -212,8 +222,14 @@
       product.dataset.sellerName = sellerName;
 
       if (sellerId) {
+        // If seller is known: set ASIN with corresponding seller in local storage
+        localStorage.setItem(asinKey(product), `{"sid":"${sellerId}","sn":"${sellerName}","ts":"${Date.now()}"}`);
         // Set data-seller-id attribute
         product.dataset.sellerId = sellerId;
+      }
+
+      if (sellerName == 'Amazon') {
+        localStorage.setItem(asinKey(product), `{"sn":"${sellerName}","ts":"${Date.now()}"}`);
       }
 
       setSellerDetails(product);
@@ -229,40 +245,54 @@
       return; // if seller is Amazon or unknown, no further steps are needed
     }
 
-    // fetch seller details from seller-page
-
-    // build seller link
-    const link = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
-
-    fetch(link).then(function (response) {
-      if (response.ok) {
-        return response.text();
-      } else if (response.status === 503) {
-        product.dataset.blocked = true;
-        populateInfoBox(product);
-        throw new Error('🙄 Too many requests. Amazon blocked seller page. Please try again in a few minutes.');
-      } else {
-        throw new Error(response.status);
-      }
-    }).then(function (html) {
-
-      let seller = getSellerDetailsFromSellerPage(parse(html));
-      // --> seller.country      (e.g. 'US')
-      // --> seller.rating.score (e.g. '69%')
-      // --> seller.rating.count (e.g. '420')
-
-      // Set attributes: data-seller-country, data-seller-rating-score and data-seller-rating-count
-      product.dataset.sellerCountry = seller.country;
-      product.dataset.sellerRatingScore = seller.rating.score;
-      product.dataset.sellerRatingCount = seller.rating.count;
+    if (localStorage.getItem(sellerKey(product))) {
+      // seller-id found in local storage
+      const {c: country, rs: ratingScore, rc: ratingCount} = JSON.parse(localStorage.getItem(sellerKey(product)));
+      product.dataset.sellerCountry = country;
+      product.dataset.sellerRatingScore = ratingScore;
+      product.dataset.sellerRatingCount = ratingCount;
 
       highlightProduct(product);
       populateInfoBox(product);
 
-    }).catch(function (err) {
-      console.warn('Could not fetch seller data for "' + product.dataset.sellerName + '" (' + link + '):', err);
-    });
+    } else {
+      // seller-id not found in local storage. fetch seller details from seller-page
 
+      // build seller link
+      const link = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
+
+      fetch(link).then(function (response) {
+        if (response.ok) {
+          return response.text();
+        } else if (response.status === 503) {
+          product.dataset.blocked = true;
+          populateInfoBox(product);
+          throw new Error('🙄 Too many requests. Amazon blocked seller page. Please try again in a few minutes.');
+        } else {
+          throw new Error(response.status);
+        }
+      }).then(function (html) {
+
+        let seller = getSellerDetailsFromSellerPage(parse(html));
+        // --> seller.country      (e.g. 'US')
+        // --> seller.rating.score (e.g. '69%')
+        // --> seller.rating.count (e.g. '420')
+
+        // Set attributes: data-seller-country, data-seller-rating-score and data-seller-rating-count
+        product.dataset.sellerCountry = seller.country;
+        product.dataset.sellerRatingScore = seller.rating.score;
+        product.dataset.sellerRatingCount = seller.rating.count;
+
+        // Write to local storage
+        localStorage.setItem(sellerKey(product), `{"c":"${seller.country}","rs":"${seller.rating.score}","rc":"${seller.rating.count}","ts":"${Date.now()}"}`);
+
+        highlightProduct(product);
+        populateInfoBox(product);
+
+      }).catch(function (err) {
+        console.warn('Could not fetch seller data for "' + product.dataset.sellerName + '" (' + link + '):', err);
+      });
+    }
   }
 
   function getSellerDetailsFromSellerPage(sellerPage) {
@@ -298,23 +328,23 @@
     let idSuffix = isRedesign ? '-rd' : '';
     if (sellerPage.getElementById('sellerName' + idSuffix).textContent.includes('Amazon')) {
       return false; // seller is Amazon subsidiary and doesn't display ratings
-    } else {
-      let text = sellerPage.getElementById('seller-feedback-summary' + idSuffix).textContent;
-      let regex = /(\d+%).*?\((\d+)/;
-      let zeroPercent = '0%';
-
-      // Turkish places the percentage sign in front (e.g. %89)
-      if (document.documentElement.lang === 'tr-tr') {
-        regex = /(%\d+).*?\((\d+)/;
-        zeroPercent = '%0';
-      }
-
-      let rating = text.match(regex);
-      let score = rating ? rating[1] : zeroPercent;
-      let count = rating ? rating[2] : '0';
-
-      return { score, count };
     }
+
+    let text = sellerPage.getElementById('seller-feedback-summary' + idSuffix).textContent;
+    let regex = /(\d+%).*?\((\d+)/;
+    let zeroPercent = '0%';
+
+    // Turkish places the percentage sign in front (e.g. %89)
+    if (document.documentElement.lang === 'tr-tr') {
+      regex = /(%\d+).*?\((\d+)/;
+      zeroPercent = '%0';
+    }
+
+    let rating = text.match(regex);
+    let score = rating ? rating[1] : zeroPercent;
+    let count = rating ? rating[2] : '0';
+
+    return { score, count };
   }
 
   function highlightProduct(product) {
@@ -491,6 +521,14 @@
     }
   }
 
+  function asinKey(product) {
+    return 'asin-' + product.dataset.asin;
+  }
+
+  function sellerKey(product) {
+    return 'seller-' + product.dataset.sellerId
+  }
+
   // Country Code to Flag Emoji (Source: https://dev.to/jorik/country-code-to-flag-emoji-a21)
   function getFlagEmoji(countryCode) {
     const codePoints = countryCode
@@ -512,7 +550,7 @@
     cursor: default;
     margin-top: 4px;
   }
-  
+
   .seller-info {
     display: inline-flex;
     gap: 4px;
@@ -523,7 +561,7 @@
     border-radius: 4px;
     max-width: 100%;
   }
-  
+
   .seller-loading {
     display: inline-block;
     width: 0.8em;
@@ -534,46 +572,46 @@
     animation: spin 1s ease-in-out infinite;
     margin: 1px 3px 0;
   }
-  
+
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
-  
+
   .seller-icon {
     vertical-align: text-top;
     text-align: center;
     font-size: 1.8em;
   }
-  
+
   .seller-icon svg {
     width: 0.8em;
     height: 0.7em;
   }
-  
+
   .seller-icon img {
     width: 0.82em;
     height: 0.82em;
   }
-  
+
   .seller-text {
     color: #1d1d1d !important;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
   }
-  
+
   a.seller-link:hover .seller-info {
     box-shadow: 0 2px 5px 0 rgb(213 217 217 / 50%);
     background-color: #f7fafa;
     border-color: #d5d9d9;
   }
-  
+
   a.seller-link:hover .seller-name {
     text-decoration: underline;
   }
-  
+
   .product--highlight .s-card-container,
   .product--highlight[data-avar],
   .product--highlight.sbv-product,
@@ -588,81 +626,81 @@
     background-color: #f9e3e4;
     border-color: #f9e3e4;
   }
-  
+
   #gridItemRoot.product--highlight,
   .product--highlight .s-card-border {
     border-color: #e3abae;
   }
-  
+
   .product--highlight .s-card-drop-shadow {
     box-shadow: none;
     border: 1px solid #e3abae;
   }
-  
+
   .product--highlight .s-card-drop-shadow .s-card-border {
     border-color: #f9e3e4;
   }
-  
+
   .product--highlight[data-avar],
   .a-carousel-has-buttons .product--highlight {
     padding: 0 2px;
     box-sizing: content-box;
   }
-  
+
   .product--highlight.zg-carousel-general-faceout,
   #rhf .product--highlight {
     box-shadow: inset 0 0 0 1px #e3abae;
     padding: 0 6px;
     word-break: break-all;
   }
-  
+
   .product--highlight.zg-carousel-general-faceout img,
   #rhf .product--highlight img {
     max-width: 100% !important;
   }
-  
+
   #rhf .product--highlight img {
     margin: 1px auto -1px;
   }
-  
+
   .product--highlight a,
   .product--highlight .a-color-base,
   .product--highlight .a-price[data-a-color='base'] {
     color: #842029 !important;
   }
-  
+
   #gridItemRoot .seller-info {
     margin-bottom: 6px;
   }
-  
+
   .octopus-pc-item-v3 .seller-info-ct,
   .octopus-pc-lightning-deal-item-v3 .seller-info-ct {
     padding: 4px 20px 0;
   }
-  
+
   .sbx-desktop .seller-info-ct {
     margin: 0;
   }
-  
+
   .sp-shoveler .seller-info-ct {
     margin: -2px 0 3px;
   }
-  
+
   .p13n-sc-shoveler .seller-info-ct {
     margin: 0;
   }
-  
+
   .octopus-pc-item-image-section-v3 {
     text-align: center;
   }
+
   #rhf .a-section.a-spacing-mini {
     text-align: center;
   }
-  
+
   a:hover.a-color-base,
   a:hover.seller-link {
     text-decoration: none;
   }
-  
   `);
 })();
