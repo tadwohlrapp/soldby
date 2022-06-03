@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.2.0
+// @version         1.3.0
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/amazon-show-seller-info-userscript
 // @supportURL      https://github.com/tadwohlrapp/amazon-show-seller-info-userscript/issues
@@ -152,6 +152,7 @@
     const {sid: sellerId, sn: sellerName} = JSON.parse(localStorage.getItem(asinKey(product)));
     if (sellerId) product.dataset.sellerId = sellerId;
     product.dataset.sellerName = sellerName;
+    // console.log('Got ASIN from Local Storage', asinKey(product))
     setSellerDetails(product);
   }
 
@@ -251,6 +252,8 @@
       product.dataset.sellerCountry = country;
       product.dataset.sellerRatingScore = ratingScore;
       product.dataset.sellerRatingCount = ratingCount;
+
+      // console.log('Got Seller from Local Storage', sellerKey(product))
 
       highlightProduct(product);
       populateInfoBox(product);
