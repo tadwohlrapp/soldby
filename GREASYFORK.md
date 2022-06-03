@@ -23,4 +23,4 @@ This script works on all Amazon marketplaces which publish third party seller's 
 ## Please note
 Amazon blocks access to seller profiles after some repeated requests were made (to prevent automated web scraping). The seller profile page then returns a 503 server error which of course prevents the script from parsing the seller details. In this case only the seller name is displayed but at least you still see if a listing is sold by Amazon or by a third party seller. Product pages are not affected by this restriction and can be accessed anytime. After a minute or so the seller profile page is reachable again and the script can continue its work.
 
-***This issue will be addressed in the next update!***
+**Version 1.3.0 now addresses this issue by using local storage to cache the results. This should result in way fewer 503 errors, so make sure to [update to the latest version](https://greasyfork.org/scripts/402064/code/script.user.js "Update from greasyfork.org")!**
