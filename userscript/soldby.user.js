@@ -17,8 +17,7 @@
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
 // @updateURL       https://greasyfork.org/scripts/402064/code/script.meta.js
 // @downloadURL     https://greasyfork.org/scripts/402064/code/script.user.js
-// @icon            https://github.com/tadwohlrapp/soldby/raw/main/icon.png
-// @icon64          https://github.com/tadwohlrapp/soldby/raw/main/icon64.png
+// @icon            https://github.com/tadwohlrapp/soldby/raw/main/userscript/img/icon.png
 // @match           https://www.amazon.co.jp/*
 // @match           https://smile.amazon.co.uk/*
 // @match           https://www.amazon.co.uk/*
