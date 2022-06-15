@@ -32,6 +32,10 @@
 // @match           https://www.amazon.it/*
 // @match           https://www.amazon.nl/*
 // @match           https://www.amazon.se/*
+// @require         https://openuserjs.org/src/libs/sizzle/GM_config.min.js
+// @grant           GM_getValue
+// @grant           GM_setValue
+// @grant           GM_registerMenuCommand
 // @compatible      firefox Tested on Firefox v101 with Violentmonkey v2.13.0, Tampermonkey v4.17.6161 and Greasemonkey v4.11
 // @compatible      chrome Tested on Chrome v102 with Violentmonkey v2.13.0 and Tampermonkey v4.16.1
 // ==/UserScript==
@@ -39,14 +43,98 @@
 (function () {
   'use strict';
 
+  const frame = document.createElement('div');
+  frame.classList.add('sb-options');
+
+  const backdrop = document.createElement('div');
+  backdrop.classList.add('sb-options--backdrop');
+
+  document.body.appendChild(frame);
+  document.body.appendChild(backdrop);
+
+  GM_config.init({
+    'id': 'sb-settings',
+    'title': 'SoldBy Settings',
+    'fields': {
+      'countries': {
+        'section': ['Countries to highlight',
+          'Country codes as per ISO 3166-1 alpha-2, separated by a comma or space.'],
+        'label': 'List of country codes',
+        'type': 'text',
+        'default': 'CN, HK'
+      },
+      'unknown': {
+        'section': ['Highlight undetectable countries',
+          'Some sellers have incomplete/invalid profiles with their country of origin missing.'],
+        'label': 'Highlight products sold from unknown countries',
+        'type': 'checkbox',
+        'default': true
+      },
+      'hide': {
+        'section': ['Hide products instead of highlighting them',
+          'If you get overwhelmed by the sheer mass of highlighted product listings, maybe you want to hide them completely.'],
+        'label': 'Yes, hide all highlighted products',
+        'type': 'checkbox',
+        'default': false
+      }
+    },
+    'events': {
+      'init': () => {
+        GM_config.css.basic = '';
+      },
+      'open': () => {
+        GM_config.frame.removeAttribute('style');
+        backdrop.style.display = 'block';
+
+        const buttons = frame.querySelectorAll('button');
+
+        function wrap(el, p) {
+          const wrapper = document.createElement('span');
+          el.classList.add('a-button-inner', 'a-button-text');
+          wrapper.classList.add('a-button', 'a-spacing-top-mini');
+          if (p) wrapper.classList.add('a-button-primary');
+          el.parentNode.insertBefore(wrapper, el);
+          wrapper.appendChild(el);
+        }
+
+        wrap(buttons[0], true);
+        wrap(buttons[1], false);
+
+        backdrop.addEventListener('click', () => {
+          GM_config.close();
+        });
+        document.onkeydown = function (evt) {
+          evt = evt || window.event;
+          var isEscape = false;
+          if ("key" in evt) isEscape = (evt.key === "Escape" || evt.key === "Esc");
+          if (isEscape) GM_config.close();
+        };
+      },
+      'save': () => {
+        GM_config.close();
+      },
+      'close': () => {
+        backdrop.removeAttribute('style');
+      },
+    },
+    'frame': frame
+  });
+
+  GM_registerMenuCommand('Open "SoldBy" Settings', () => {
+    GM_config.open()
+  })
+
+  const countriesArr = GM_config.get('countries').split(/(?:,| )+/);
+  if (GM_config.get('unknown')) countriesArr.push('?');
+
   const options = {
-    highlightedCountries: ['?', 'CN', 'HK'],
+    highlightedCountries: countriesArr,
     // Country codes as per ISO 3166-1 alpha-2
     // Set this to [] to highlight no sellers at all
     // Set it to ['FR'] to highlight sellers from France
     // '?' means country is unknown due to seller having incomplete/invalid profile
     // Default: ['?', 'CN', 'HK']
-    hideHighlightedProducts: true
+    hideHighlightedProducts: GM_config.get('hide')
   };
 
   function showSellerCountry() {
@@ -726,6 +814,97 @@
   a:hover.a-color-base,
   a:hover.seller-link {
     text-decoration: none;
+  }
+
+  .sb-options {
+    display: none;
+    left: 50%;
+    margin: 5vh auto;
+    max-height: 90vh;
+    max-width: 80vw;
+    overflow-y: auto;
+    position: fixed;
+    top: 0;
+    transform: translateX(-50%);
+    width: 666px;
+    z-index: 999;
+    background-color: white;
+    padding: 1rem;
+  }
+
+  .sb-options--backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    user-select: none;
+    z-index: 199;
+  }
+
+  #sb-settings * {
+    font-family: inherit;
+  }
+
+  #sb-settings .config_var {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  #sb-settings .config_var input[type="checkbox"] {
+    margin-right: 4px;
+    min-width: 13px;
+  }
+
+  #sb-settings #sb-settings_countries_var {
+    flex-direction: column-reverse;
+  }
+
+  #sb-settings .config_header {
+    font-size: 165%;
+    line-height: 32px;
+  }
+
+  #sb-settings_header::before {
+    content: '';
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(https://github.com/tadwohlrapp/soldby/raw/main/userscript/img/icon.png);
+    background-size: contain;
+    margin-right: 12px;
+    vertical-align: bottom;
+  }
+
+  #sb-settings .config_header,
+  #sb-settings .config_var {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #ccc;
+  }
+
+  #sb-settings .section_header {
+    font-size: 110%;
+    font-weight: 500;
+  }
+
+  #sb-settings .section_desc {
+    color: #666;
+    background: #fff;
+  }
+
+  #sb-settings label {
+    font-weight: 500;
+  }
+
+  #sb-settings_buttons_holder {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 12px;
+    align-items: center;
   }
   `);
 })();
