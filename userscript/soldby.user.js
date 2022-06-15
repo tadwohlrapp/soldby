@@ -40,12 +40,14 @@
   'use strict';
 
   const options = {
-    highlightedCountries: ['?', 'CN', 'HK']
+    highlightedCountries: ['?', 'CN', 'HK'],
+    // Country codes as per ISO 3166-1 alpha-2
+    // Set this to [] to highlight no sellers at all
+    // Set it to ['FR'] to highlight sellers from France
+    // '?' means country is unknown due to seller having incomplete/invalid profile
+    // Default: ['?', 'CN', 'HK']
+    hideHighlightedProducts: true
   };
-  // Country codes as per ISO 3166-1 alpha-2
-  // Set to [] to highlight no sellers at all
-  // Set to ['FR'] to highlight sellers from France
-  // Default: ['CN', 'HK']
 
   function showSellerCountry() {
 
@@ -186,6 +188,8 @@
         const thirdPartySellerSelectors = [
           '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #sellerProfileTriggerId',
           '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #merchant-info a:first-of-type',
+          '#exports_desktop_qualifiedBuybox :not(#usedAccordionRow) #sellerProfileTriggerId',
+          '#exports_desktop_qualifiedBuybox :not(#usedAccordionRow) #merchant-info a:first-of-type',
           '#newAccordionRow #sellerProfileTriggerId',
           '#newAccordionRow #merchant-info a:first-of-type'
         ]
@@ -350,10 +354,25 @@
   }
 
   function highlightProduct(product) {
-    if (options.highlightedCountries.includes(product.dataset.sellerCountry)) {
-      // Highlight sellers from countries defined in 'options.highlightedCountries'
-      product.classList.add('product--highlight');
+    if (!options.highlightedCountries.includes(product.dataset.sellerCountry)) return;
+
+    // Highlight sellers from countries defined in 'options.highlightedCountries'
+    product.classList.add('product--highlight');
+
+    if (!options.hideHighlightedProducts) return;
+
+    // When hideHighlightedProducts is true: Find correct element to hide
+    let hiddenElement = product;
+    if (product.parentElement.classList.contains('a-carousel-card')) {
+      hiddenElement = product.parentElement;
     }
+    if (product.closest('.sbx-desktop') !== null) {
+      hiddenElement = product.closest('.sbx-desktop');
+    }
+    if (product.classList.contains('sbv-product')) {
+      hiddenElement = product.closest('.s-result-item');
+    }
+    hiddenElement.classList.add('sb--hide');
   }
 
   function createInfoBox(product) {
@@ -548,6 +567,10 @@
   }
 
   addGlobalStyle(`
+  .sb--hide {
+    display: none !important;
+  }
+
   .seller-info-ct {
     cursor: default;
     margin-top: 4px;
