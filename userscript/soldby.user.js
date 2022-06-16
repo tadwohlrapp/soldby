@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.4.1
+// @version         1.5.0
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -32,6 +32,9 @@
 // @match           https://www.amazon.it/*
 // @match           https://www.amazon.nl/*
 // @match           https://www.amazon.se/*
+// @require         https://openuserjs.org/src/libs/sizzle/GM_config.min.js
+// @grant           GM_getValue
+// @grant           GM_setValue
 // @compatible      firefox Tested on Firefox v101 with Violentmonkey v2.13.0, Tampermonkey v4.17.6161 and Greasemonkey v4.11
 // @compatible      chrome Tested on Chrome v102 with Violentmonkey v2.13.0 and Tampermonkey v4.16.1
 // ==/UserScript==
@@ -39,13 +42,92 @@
 (function () {
   'use strict';
 
+  const frame = document.createElement('div');
+  frame.classList.add('sb-options');
+
+  const backdrop = document.createElement('div');
+  backdrop.classList.add('sb-options--backdrop');
+
+  document.body.appendChild(frame);
+  document.body.appendChild(backdrop);
+
+  GM_config.init({
+    'id': 'sb-settings',
+    'title': 'SoldBy Settings',
+    'fields': {
+      'countries': {
+        'section': ['Countries to highlight',
+          'Country codes as per ISO 3166-1 alpha-2, separated by a comma or space.'],
+        'label': 'List of country codes',
+        'type': 'text',
+        'default': 'CN, HK'
+      },
+      'unknown': {
+        'section': ['Highlight undetectable countries',
+          'Some sellers have incomplete/invalid profiles with their country of origin missing.'],
+        'label': 'Highlight products sold from unknown countries',
+        'type': 'checkbox',
+        'default': true
+      },
+      'hide': {
+        'section': ['Hide products instead of highlighting them',
+          'If you get overwhelmed by the sheer mass of highlighted product listings, maybe you want to hide them completely.'],
+        'label': 'Yes, hide all highlighted products',
+        'type': 'checkbox',
+        'default': false
+      }
+    },
+    'events': {
+      'init': () => {
+        GM_config.css.basic = '';
+      },
+      'open': () => {
+        GM_config.frame.removeAttribute('style');
+        backdrop.style.display = 'block';
+
+        const buttons = frame.querySelectorAll('button');
+        wrapBtn(buttons[0], true);
+        wrapBtn(buttons[1]);
+
+        backdrop.addEventListener('click', () => {
+          GM_config.close();
+        });
+        document.onkeydown = function (evt) {
+          evt = evt || window.event;
+          var isEscape = false;
+          if ("key" in evt) isEscape = (evt.key === "Escape" || evt.key === "Esc");
+          if (isEscape) GM_config.close();
+        };
+      },
+      'save': () => {
+        GM_config.close();
+      },
+      'close': () => {
+        backdrop.removeAttribute('style');
+      },
+    },
+    'frame': frame
+  });
+
+  // Link to Settings in Footer:
+  try {
+    const settingsLink = document.createElement('button');
+    const navFooterCopyright = document.querySelector('.navFooterCopyright');
+    navFooterCopyright.appendChild(settingsLink);
+    settingsLink.addEventListener('click', () => { GM_config.open(); });
+    settingsLink.textContent = '⚙️ SoldBy';
+    wrapBtn(settingsLink, false, true);
+  } catch {
+    console.error('Could not add settings link');
+  }
+
+  const countriesArr = GM_config.get('countries').split(/(?:,| )+/);
+  if (GM_config.get('unknown')) countriesArr.push('?');
+
   const options = {
-    highlightedCountries: ['?', 'CN', 'HK']
+    highlightedCountries: countriesArr,
+    hideHighlightedProducts: GM_config.get('hide')
   };
-  // Country codes as per ISO 3166-1 alpha-2
-  // Set to [] to highlight no sellers at all
-  // Set to ['FR'] to highlight sellers from France
-  // Default: ['CN', 'HK']
 
   function showSellerCountry() {
 
@@ -186,6 +268,8 @@
         const thirdPartySellerSelectors = [
           '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #sellerProfileTriggerId',
           '#desktop_qualifiedBuyBox :not(#usedAccordionRow) #merchant-info a:first-of-type',
+          '#exports_desktop_qualifiedBuybox :not(#usedAccordionRow) #sellerProfileTriggerId',
+          '#exports_desktop_qualifiedBuybox :not(#usedAccordionRow) #merchant-info a:first-of-type',
           '#newAccordionRow #sellerProfileTriggerId',
           '#newAccordionRow #merchant-info a:first-of-type'
         ]
@@ -350,10 +434,25 @@
   }
 
   function highlightProduct(product) {
-    if (options.highlightedCountries.includes(product.dataset.sellerCountry)) {
-      // Highlight sellers from countries defined in 'options.highlightedCountries'
-      product.classList.add('product--highlight');
+    if (!options.highlightedCountries.includes(product.dataset.sellerCountry)) return;
+
+    // Highlight sellers from countries defined in 'options.highlightedCountries'
+    product.classList.add('product--highlight');
+
+    if (!options.hideHighlightedProducts) return;
+
+    // When hideHighlightedProducts is true: Find correct element to hide
+    let hiddenElement = product;
+    if (product.parentElement.classList.contains('a-carousel-card')) {
+      hiddenElement = product.parentElement;
     }
+    if (product.closest('.sbx-desktop') !== null) {
+      hiddenElement = product.closest('.sbx-desktop');
+    }
+    if (product.classList.contains('sbv-product')) {
+      hiddenElement = product.closest('.s-result-item');
+    }
+    hiddenElement.classList.add('sb--hide');
   }
 
   function createInfoBox(product) {
@@ -539,6 +638,17 @@
     return String.fromCodePoint(...codePoints);
   }
 
+  // wrap function to create buttons with amazon's ui
+  function wrapBtn(el, primary = false, small = false) {
+    const wrapper = document.createElement('span');
+    el.classList.add('a-button-inner', 'a-button-text');
+    wrapper.classList.add('a-button');
+    if (primary) wrapper.classList.add('a-button-primary');
+    if (small) wrapper.classList.add('a-button-small');
+    el.parentNode.insertBefore(wrapper, el);
+    wrapper.appendChild(el);
+  }
+
   function addGlobalStyle(css) {
     const head = document.getElementsByTagName('head')[0];
     if (!head) return;
@@ -548,6 +658,10 @@
   }
 
   addGlobalStyle(`
+  .sb--hide {
+    display: none !important;
+  }
+
   .seller-info-ct {
     cursor: default;
     margin-top: 4px;
@@ -703,6 +817,97 @@
   a:hover.a-color-base,
   a:hover.seller-link {
     text-decoration: none;
+  }
+
+  .sb-options {
+    display: none;
+    left: 50%;
+    margin: 5vh auto;
+    max-height: 90vh;
+    max-width: 80vw;
+    overflow-y: auto;
+    position: fixed;
+    top: 0;
+    transform: translateX(-50%);
+    width: 666px;
+    z-index: 999;
+    background-color: white;
+    padding: 1rem;
+  }
+
+  .sb-options--backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    user-select: none;
+    z-index: 199;
+  }
+
+  #sb-settings * {
+    font-family: inherit;
+  }
+
+  #sb-settings .config_var {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  #sb-settings .config_var input[type="checkbox"] {
+    margin-right: 4px;
+    min-width: 13px;
+  }
+
+  #sb-settings #sb-settings_countries_var {
+    flex-direction: column-reverse;
+  }
+
+  #sb-settings .config_header {
+    font-size: 165%;
+    line-height: 32px;
+  }
+
+  #sb-settings_header::before {
+    content: '';
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(https://github.com/tadwohlrapp/soldby/raw/main/userscript/img/icon.png);
+    background-size: contain;
+    margin-right: 12px;
+    vertical-align: bottom;
+  }
+
+  #sb-settings .config_header,
+  #sb-settings .config_var {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #ccc;
+  }
+
+  #sb-settings .section_header {
+    font-size: 110%;
+    font-weight: 500;
+  }
+
+  #sb-settings .section_desc {
+    color: #666;
+    background: #fff;
+  }
+
+  #sb-settings label {
+    font-weight: 500;
+  }
+
+  #sb-settings_buttons_holder {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 12px;
+    align-items: center;
   }
   `);
 })();
