@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.4.1
+// @version         1.5.0
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -35,7 +35,6 @@
 // @require         https://openuserjs.org/src/libs/sizzle/GM_config.min.js
 // @grant           GM_getValue
 // @grant           GM_setValue
-// @grant           GM_registerMenuCommand
 // @compatible      firefox Tested on Firefox v101 with Violentmonkey v2.13.0, Tampermonkey v4.17.6161 and Greasemonkey v4.11
 // @compatible      chrome Tested on Chrome v102 with Violentmonkey v2.13.0 and Tampermonkey v4.16.1
 // ==/UserScript==
@@ -87,18 +86,8 @@
         backdrop.style.display = 'block';
 
         const buttons = frame.querySelectorAll('button');
-
-        function wrap(el, p) {
-          const wrapper = document.createElement('span');
-          el.classList.add('a-button-inner', 'a-button-text');
-          wrapper.classList.add('a-button', 'a-spacing-top-mini');
-          if (p) wrapper.classList.add('a-button-primary');
-          el.parentNode.insertBefore(wrapper, el);
-          wrapper.appendChild(el);
-        }
-
-        wrap(buttons[0], true);
-        wrap(buttons[1], false);
+        wrapBtn(buttons[0], true);
+        wrapBtn(buttons[1]);
 
         backdrop.addEventListener('click', () => {
           GM_config.close();
@@ -120,20 +109,23 @@
     'frame': frame
   });
 
-  GM_registerMenuCommand('Open "SoldBy" Settings', () => {
-    GM_config.open()
-  })
+  // Link to Settings in Footer:
+  try {
+    const settingsLink = document.createElement('button');
+    const navFooterCopyright = document.querySelector('.navFooterCopyright');
+    navFooterCopyright.appendChild(settingsLink);
+    settingsLink.addEventListener('click', () => { GM_config.open(); });
+    settingsLink.textContent = '⚙️ SoldBy';
+    wrapBtn(settingsLink, false, true);
+  } catch {
+    console.error('Could not add settings link');
+  }
 
   const countriesArr = GM_config.get('countries').split(/(?:,| )+/);
   if (GM_config.get('unknown')) countriesArr.push('?');
 
   const options = {
     highlightedCountries: countriesArr,
-    // Country codes as per ISO 3166-1 alpha-2
-    // Set this to [] to highlight no sellers at all
-    // Set it to ['FR'] to highlight sellers from France
-    // '?' means country is unknown due to seller having incomplete/invalid profile
-    // Default: ['?', 'CN', 'HK']
     hideHighlightedProducts: GM_config.get('hide')
   };
 
@@ -644,6 +636,17 @@
       .split('')
       .map(char => 127397 + char.charCodeAt());
     return String.fromCodePoint(...codePoints);
+  }
+
+  // wrap function to create buttons with amazon's ui
+  function wrapBtn(el, primary = false, small = false) {
+    const wrapper = document.createElement('span');
+    el.classList.add('a-button-inner', 'a-button-text');
+    wrapper.classList.add('a-button');
+    if (primary) wrapper.classList.add('a-button-primary');
+    if (small) wrapper.classList.add('a-button-small');
+    el.parentNode.insertBefore(wrapper, el);
+    wrapper.appendChild(el);
   }
 
   function addGlobalStyle(css) {
