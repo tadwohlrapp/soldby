@@ -246,27 +246,21 @@
   }
 
   function getSellerIdAndNameFromLocalStorage(product) {
-    // console.log(asinKey(product), 'BEGIN Get ASIN (seller ID and Name) from local storage');
-    const { sid: sellerId, sn: sellerName, ts: itemTimeStamp } = JSON.parse(localStorage.getItem(asinKey(product)));
+    const { sid: sellerId, sn: sellerName, ts: timeStamp } = JSON.parse(localStorage.getItem(asinKey(product)));
 
-    const allowedAgeInMs = options.maxAgeAsinFetch * 1000 * 3600 * 24;
-    const oldestValidTimeStamp = Date.now() - allowedAgeInMs;
-    if (oldestValidTimeStamp > parseInt(itemTimeStamp)) {
-      // console.warn(asinKey(product) + ' is too old. We must re-fetch it');
-      return getSellerIdAndNameFromProductPage(product);
-    }
+    validateItemAge(product, timeStamp, 'asin');
 
     if (sellerId) product.dataset.sellerId = sellerId;
     product.dataset.sellerName = sellerName;
-    // console.log(asinKey(product), 'END Get ASIN (seller ID and Name) from local storage')
     setSellerDetails(product);
   }
 
-  function getSellerIdAndNameFromProductPage(product) {
+  function getSellerIdAndNameFromProductPage(product, refetch = false) {
     // fetch seller, get data, save in local storage, set attributes
 
     if (!product.dataset.asin) return;
-    // console.log(asinKey(product), 'BEGIN Get ASIN (seller ID and Name) from product page');
+
+    if (refetch) console.log('Re-fetching ' + asinKey(product) + ' from product page');
 
     const link = window.location.origin + '/dp/' + product.dataset.asin + '?psc=1';
 
@@ -342,8 +336,6 @@
         localStorage.setItem(asinKey(product), `{"sn":"${sellerName}","ts":"${Date.now()}"}`);
       }
 
-      // console.log(asinKey(product), 'END Get ASIN (seller ID and Name) from product page');
-
       setSellerDetails(product);
 
     }).catch(function (err) {
@@ -365,32 +357,24 @@
   }
 
   function getSellerCountryAndRatingfromLocalStorage(product) {
-    // console.log(sellerKey(product), 'BEGIN Get SELLER (seller country and rating) from local storage');
 
     // seller key found in local storage
-    const { c: country, rs: ratingScore, rc: ratingCount, ts: itemTimeStamp } = JSON.parse(localStorage.getItem(sellerKey(product)));
+    const { c: country, rs: ratingScore, rc: ratingCount, ts: timeStamp } = JSON.parse(localStorage.getItem(sellerKey(product)));
 
-    const allowedAgeInMs = options.maxAgeSellerFetch * 1000 * 3600 * 24;
-    const oldestValidTimeStamp = Date.now() - allowedAgeInMs;
-    if (oldestValidTimeStamp > parseInt(itemTimeStamp)) {
-      // console.warn(sellerKey(product) + ' is too old. We must re-fetch it');
-      return getSellerCountryAndRatingfromSellerPage(product);
-    }
+    validateItemAge(product, timeStamp, 'seller');
 
     product.dataset.sellerCountry = country;
     product.dataset.sellerRatingScore = ratingScore;
     product.dataset.sellerRatingCount = ratingCount;
 
-    // console.log(sellerKey(product), 'END Get SELLER (seller country and rating) from local storage');
-
     highlightProduct(product);
     populateInfoBox(product);
   }
 
-  function getSellerCountryAndRatingfromSellerPage(product) {
+  function getSellerCountryAndRatingfromSellerPage(product, refetch = false) {
     // seller key not found in local storage. fetch seller details from seller-page
 
-    // console.log(sellerKey(product), 'BEGIN Get SELLER (seller country and rating) from seller page');
+    if (refetch) console.log('Re-fetching ' + sellerKey(product) + ' from product page');
 
     // build seller link
     const link = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
@@ -419,8 +403,6 @@
 
       // Write to local storage
       localStorage.setItem(sellerKey(product), `{"c":"${seller.country}","rs":"${seller.rating.score}","rc":"${seller.rating.count}","ts":"${Date.now()}"}`);
-
-      // console.log(sellerKey(product), 'END Get SELLER (seller country and rating) from seller page');
 
       highlightProduct(product);
       populateInfoBox(product);
@@ -696,6 +678,38 @@
     if (small) wrapper.classList.add('a-button-small');
     el.parentNode.insertBefore(wrapper, el);
     wrapper.appendChild(el);
+  }
+
+  // validate storage item age and trigger re-fetch if needed
+  function validateItemAge(product, itemTimeStamp, itemType) {
+    const currentItemAge = Date.now() - parseInt(itemTimeStamp);
+    let allowedItemAge, key, refetchFunction;
+
+    switch (itemType) {
+      case 'asin':
+        allowedItemAge = options.maxAgeAsinFetch * 1000 * 3600 * 24;
+        key = asinKey;
+        refetchFunction = getSellerIdAndNameFromProductPage;
+        break;
+      case 'seller':
+        allowedItemAge = options.maxAgeSellerFetch * 1000 * 3600 * 24;
+        key = sellerKey;
+        refetchFunction = getSellerCountryAndRatingfromSellerPage;
+        break;
+    }
+
+    if (currentItemAge > allowedItemAge) {
+      console.warn('Storage item ' + key(product) + ' is ' + readableItemAge(currentItemAge) + ' old. We must re-fetch it');
+      return refetchFunction(product, true);
+    }
+  }
+
+  // convert storage item age from millisecs to days and hours
+  function readableItemAge(ms) {
+    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+    const daysms = ms % (24 * 60 * 60 * 1000);
+    const hours = Math.floor(daysms / (60 * 60 * 1000));
+    return days + ' days and ' + hours + ' hours';
   }
 
   function addGlobalStyle(css) {
