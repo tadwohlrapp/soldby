@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.5.0
+// @version         1.6.0
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -75,6 +75,20 @@
         'label': 'Yes, hide all highlighted products',
         'type': 'checkbox',
         'default': false
+      },
+      'max-asin-age': {
+        'section': ['Check every x days if the seller for a product has changed',
+          'For better performance, SoldBy caches product-seller relationships in your browser\'s local storage for one day (24 hours). You can change that value here.'],
+        'label': 'Number of days after which a product should be re-fetched',
+        'type': 'int',
+        'default': 1
+      },
+      'max-seller-age': {
+        'section': ['Check every x days if a seller has new ratings (or has moved countries)',
+          'For better performance, SoldBy caches a seller\'s ratings and country in your browser\'s local storage for one week (7 days). You can change that value here.'],
+        'label': 'Number of days after which a seller should be re-fetched',
+        'type': 'int',
+        'default': 7
       }
     },
     'events': {
@@ -125,6 +139,8 @@
   if (GM_config.get('unknown')) countriesArr.push('?');
 
   const options = {
+    maxAgeAsinFetch: GM_config.get('max-asin-age'),
+    maxAgeSellerFetch: GM_config.get('max-seller-age'),
     highlightedCountries: countriesArr,
     hideHighlightedProducts: GM_config.get('hide')
   };
@@ -164,9 +180,9 @@
       createInfoBox(product);
 
       if (localStorage.getItem(asinKey(product))) {
-        getSellerFromLocalStorage(product);
+        getSellerIdAndNameFromLocalStorage(product);
       } else {
-        getSellerFromProductPage(product);
+        getSellerIdAndNameFromProductPage(product);
       }
     });
   }
@@ -229,18 +245,22 @@
     });
   }
 
-  function getSellerFromLocalStorage(product) {
-    const { sid: sellerId, sn: sellerName } = JSON.parse(localStorage.getItem(asinKey(product)));
+  function getSellerIdAndNameFromLocalStorage(product) {
+    const { sid: sellerId, sn: sellerName, ts: timeStamp } = JSON.parse(localStorage.getItem(asinKey(product)));
+
+    validateItemAge(product, timeStamp, 'asin');
+
     if (sellerId) product.dataset.sellerId = sellerId;
     product.dataset.sellerName = sellerName;
-    // console.log('Got ASIN from Local Storage', asinKey(product))
     setSellerDetails(product);
   }
 
-  function getSellerFromProductPage(product) {
+  function getSellerIdAndNameFromProductPage(product, refetch = false) {
     // fetch seller, get data, save in local storage, set attributes
 
     if (!product.dataset.asin) return;
+
+    if (refetch) console.log('Re-fetching ' + asinKey(product) + ' from product page');
 
     const link = window.location.origin + '/dp/' + product.dataset.asin + '?psc=1';
 
@@ -330,55 +350,66 @@
     }
 
     if (localStorage.getItem(sellerKey(product))) {
-      // seller-id found in local storage
-      const { c: country, rs: ratingScore, rc: ratingCount } = JSON.parse(localStorage.getItem(sellerKey(product)));
-      product.dataset.sellerCountry = country;
-      product.dataset.sellerRatingScore = ratingScore;
-      product.dataset.sellerRatingCount = ratingCount;
+      getSellerCountryAndRatingfromLocalStorage(product);
+    } else {
+      getSellerCountryAndRatingfromSellerPage(product);
+    }
+  }
 
-      // console.log('Got Seller from Local Storage', sellerKey(product))
+  function getSellerCountryAndRatingfromLocalStorage(product) {
+
+    // seller key found in local storage
+    const { c: country, rs: ratingScore, rc: ratingCount, ts: timeStamp } = JSON.parse(localStorage.getItem(sellerKey(product)));
+
+    validateItemAge(product, timeStamp, 'seller');
+
+    product.dataset.sellerCountry = country;
+    product.dataset.sellerRatingScore = ratingScore;
+    product.dataset.sellerRatingCount = ratingCount;
+
+    highlightProduct(product);
+    populateInfoBox(product);
+  }
+
+  function getSellerCountryAndRatingfromSellerPage(product, refetch = false) {
+    // seller key not found in local storage. fetch seller details from seller-page
+
+    if (refetch) console.log('Re-fetching ' + sellerKey(product) + ' from product page');
+
+    // build seller link
+    const link = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
+
+    fetch(link).then(function (response) {
+      if (response.ok) {
+        return response.text();
+      } else if (response.status === 503) {
+        product.dataset.blocked = true;
+        populateInfoBox(product);
+        throw new Error('🙄 Too many requests. Amazon blocked seller page. Please try again in a few minutes.');
+      } else {
+        throw new Error(response.status);
+      }
+    }).then(function (html) {
+
+      let seller = getSellerDetailsFromSellerPage(parse(html));
+      // --> seller.country      (e.g. 'US')
+      // --> seller.rating.score (e.g. '69%')
+      // --> seller.rating.count (e.g. '420')
+
+      // Set attributes: data-seller-country, data-seller-rating-score and data-seller-rating-count
+      product.dataset.sellerCountry = seller.country;
+      product.dataset.sellerRatingScore = seller.rating.score;
+      product.dataset.sellerRatingCount = seller.rating.count;
+
+      // Write to local storage
+      localStorage.setItem(sellerKey(product), `{"c":"${seller.country}","rs":"${seller.rating.score}","rc":"${seller.rating.count}","ts":"${Date.now()}"}`);
 
       highlightProduct(product);
       populateInfoBox(product);
 
-    } else {
-      // seller-id not found in local storage. fetch seller details from seller-page
-
-      // build seller link
-      const link = window.location.origin + '/sp?seller=' + product.dataset.sellerId;
-
-      fetch(link).then(function (response) {
-        if (response.ok) {
-          return response.text();
-        } else if (response.status === 503) {
-          product.dataset.blocked = true;
-          populateInfoBox(product);
-          throw new Error('🙄 Too many requests. Amazon blocked seller page. Please try again in a few minutes.');
-        } else {
-          throw new Error(response.status);
-        }
-      }).then(function (html) {
-
-        let seller = getSellerDetailsFromSellerPage(parse(html));
-        // --> seller.country      (e.g. 'US')
-        // --> seller.rating.score (e.g. '69%')
-        // --> seller.rating.count (e.g. '420')
-
-        // Set attributes: data-seller-country, data-seller-rating-score and data-seller-rating-count
-        product.dataset.sellerCountry = seller.country;
-        product.dataset.sellerRatingScore = seller.rating.score;
-        product.dataset.sellerRatingCount = seller.rating.count;
-
-        // Write to local storage
-        localStorage.setItem(sellerKey(product), `{"c":"${seller.country}","rs":"${seller.rating.score}","rc":"${seller.rating.count}","ts":"${Date.now()}"}`);
-
-        highlightProduct(product);
-        populateInfoBox(product);
-
-      }).catch(function (err) {
-        console.warn('Could not fetch seller data for "' + product.dataset.sellerName + '" (' + link + '):', err);
-      });
-    }
+    }).catch(function (err) {
+      console.warn('Could not fetch seller data for "' + product.dataset.sellerName + '" (' + link + '):', err);
+    });
   }
 
   function getSellerDetailsFromSellerPage(sellerPage) {
@@ -649,6 +680,38 @@
     wrapper.appendChild(el);
   }
 
+  // validate storage item age and trigger re-fetch if needed
+  function validateItemAge(product, itemTimeStamp, itemType) {
+    const currentItemAge = Date.now() - parseInt(itemTimeStamp);
+    let allowedItemAge, key, refetchFunction;
+
+    switch (itemType) {
+      case 'asin':
+        allowedItemAge = options.maxAgeAsinFetch * 1000 * 3600 * 24;
+        key = asinKey;
+        refetchFunction = getSellerIdAndNameFromProductPage;
+        break;
+      case 'seller':
+        allowedItemAge = options.maxAgeSellerFetch * 1000 * 3600 * 24;
+        key = sellerKey;
+        refetchFunction = getSellerCountryAndRatingfromSellerPage;
+        break;
+    }
+
+    if (currentItemAge > allowedItemAge) {
+      console.warn('Storage item ' + key(product) + ' is ' + readableItemAge(currentItemAge) + ' old. We must re-fetch it');
+      return refetchFunction(product, true);
+    }
+  }
+
+  // convert storage item age from millisecs to days and hours
+  function readableItemAge(ms) {
+    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+    const daysms = ms % (24 * 60 * 60 * 1000);
+    const hours = Math.floor(daysms / (60 * 60 * 1000));
+    return days + ' days and ' + hours + ' hours';
+  }
+
   function addGlobalStyle(css) {
     const head = document.getElementsByTagName('head')[0];
     if (!head) return;
@@ -862,7 +925,9 @@
     min-width: 13px;
   }
 
-  #sb-settings #sb-settings_countries_var {
+  #sb-settings #sb-settings_countries_var,
+  #sb-settings #sb-settings_max-asin-age_var,
+  #sb-settings #sb-settings_max-seller-age_var {
     flex-direction: column-reverse;
   }
 
