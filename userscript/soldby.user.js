@@ -23,6 +23,7 @@
 // @match           https://www.amazon.co.uk/*
 // @match           https://smile.amazon.com/*
 // @match           https://www.amazon.com/*
+// @match           https://www.amazon.com.be/*
 // @match           https://www.amazon.com.mx/*
 // @match           https://www.amazon.com.tr/*
 // @match           https://smile.amazon.de/*
