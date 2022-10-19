@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.6.0
+// @version         1.6.1
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
