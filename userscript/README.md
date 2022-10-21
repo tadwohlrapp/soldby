@@ -17,6 +17,7 @@ This script works on all Amazon marketplaces which publish third party seller's 
 - 🇯🇵 amazon.co.jp
 - 🇬🇧 amazon.co.uk (+ smile)
 - 🇺🇸 **amazon.com** (+ smile)
+- 🇧🇪 amazon.com.be
 - 🇲🇽 amazon.com.mx
 - 🇹🇷 amazon.com.tr
 - 🇩🇪 amazon.de (+ smile)
