@@ -419,7 +419,7 @@
     const isRedesign = sellerProfileContainer.classList.contains('spp-redesigned');
 
     const country = getSellerCountryFromSellerPage(sellerPage, isRedesign); // returns DE
-    const rating = getSellerRatingFromSellerPage(sellerPage, isRedesign); // returns 91%
+    const rating = getSellerRatingFromSellerPage(sellerPage); // returns 91%
 
     return { country, rating };
   }
@@ -427,7 +427,8 @@
   function getSellerCountryFromSellerPage(sellerPage, isRedesign) {
     let country;
     if (isRedesign) {
-      country = sellerPage.querySelector('#page-section-detail-seller-info .a-box-inner .a-row:last-of-type span')?.textContent.toUpperCase();
+      let addressArr = sellerPage.querySelectorAll('#page-section-detail-seller-info .a-box-inner .a-row.a-spacing-none.indent-left');
+      country = addressArr[addressArr.length - 1]?.textContent.toUpperCase();
     } else {
       try {
         const sellerUl = sellerPage.querySelectorAll('ul.a-unordered-list.a-nostyle.a-vertical'); //get all ul
@@ -442,13 +443,12 @@
     return (/^[A-Z]{2}$/.test(country)) ? country : '?';
   }
 
-  function getSellerRatingFromSellerPage(sellerPage, isRedesign) {
-    let idSuffix = isRedesign ? '-rd' : '';
-    if (sellerPage.getElementById('sellerName' + idSuffix).textContent.includes('Amazon')) {
+  function getSellerRatingFromSellerPage(sellerPage) {
+    if (sellerPage.getElementById('seller-name').textContent.includes('Amazon')) {
       return false; // seller is Amazon subsidiary and doesn't display ratings
     }
 
-    let text = sellerPage.getElementById('seller-feedback-summary' + idSuffix).textContent;
+    let text = sellerPage.getElementById('seller-info-feedback-summary').textContent;
     let regex = /(\d+%).*?\((\d+)/;
     let zeroPercent = '0%';
 
