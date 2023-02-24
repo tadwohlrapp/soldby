@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.6.2
+// @version         1.6.3
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -302,7 +302,7 @@
           const sellerUrl = window.location.origin + '/sp?seller=' + sellerId;
 
           // Get seller Name
-          sellerName = thirdPartySeller.textContent.trim();
+          sellerName = thirdPartySeller.textContent.trim().replaceAll('"', '“');
         } else {
 
           let queryMerchantName = ' ';
@@ -453,6 +453,12 @@
     if (document.documentElement.lang === 'tr-tr') {
       regex = /(%\d+).*?\((\d+)/;
       zeroPercent = '%0';
+    }
+
+    // amazon.com.be is being weird in french
+    if (document.documentElement.lang === 'fr-be') {
+      regex = /5(\d+ %).*?\((\d+)/;
+      zeroPercent = '0 %';
     }
 
     let rating = text.match(regex);
