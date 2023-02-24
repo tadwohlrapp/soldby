@@ -15,12 +15,12 @@ To set different countries in the script's options scroll to the very bottom of 
 This script works on all Amazon marketplaces which publish third party seller's addresses on their seller profile page. At this point those are (in alphabetical order):
 
 - 🇯🇵 amazon.co.jp
-- 🇬🇧 amazon.co.uk (+ smile)
-- 🇺🇸 **amazon.com** (+ smile)
+- 🇬🇧 amazon.co.uk
+- 🇺🇸 **amazon.com**
 - 🇧🇪 amazon.com.be
 - 🇲🇽 amazon.com.mx
 - 🇹🇷 amazon.com.tr
-- 🇩🇪 amazon.de (+ smile)
+- 🇩🇪 amazon.de
 - 🇪🇸 amazon.es
 - 🇫🇷 amazon.fr
 - 🇮🇹 amazon.it

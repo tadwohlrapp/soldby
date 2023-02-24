@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.6.1
+// @version         1.6.2
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -19,14 +19,11 @@
 // @downloadURL     https://greasyfork.org/scripts/402064/code/script.user.js
 // @icon            https://github.com/tadwohlrapp/soldby/raw/main/userscript/img/icon.png
 // @match           https://www.amazon.co.jp/*
-// @match           https://smile.amazon.co.uk/*
 // @match           https://www.amazon.co.uk/*
-// @match           https://smile.amazon.com/*
 // @match           https://www.amazon.com/*
 // @match           https://www.amazon.com.be/*
 // @match           https://www.amazon.com.mx/*
 // @match           https://www.amazon.com.tr/*
-// @match           https://smile.amazon.de/*
 // @match           https://www.amazon.de/*
 // @match           https://www.amazon.es/*
 // @match           https://www.amazon.fr/*
