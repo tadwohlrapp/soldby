@@ -489,11 +489,7 @@
 
   function createInfoBox(product) {
     const infoBoxCt = document.createElement('div');
-    infoBoxCt.classList.add('seller-info-ct');
-
-    if (product.offsetWidth < 400) {
-      infoBoxCt.classList.add('a-size-small');
-    }
+    infoBoxCt.classList.add('seller-info-ct', 'a-size-small');
 
     const infoBox = document.createElement('div');
     infoBox.classList.add('seller-info');
