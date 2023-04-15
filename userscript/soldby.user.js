@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.6.4
+// @version         1.7.0
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -33,12 +33,28 @@
 // @require         https://openuserjs.org/src/libs/sizzle/GM_config.min.js
 // @grant           GM_getValue
 // @grant           GM_setValue
-// @compatible      firefox Tested on Firefox v101 with Violentmonkey v2.13.0, Tampermonkey v4.17.6161 and Greasemonkey v4.11
-// @compatible      chrome Tested on Chrome v102 with Violentmonkey v2.13.0 and Tampermonkey v4.16.1
+// @compatible      firefox Tested on Firefox v112 with Violentmonkey v2.14.0, Tampermonkey v4.18.1 and Greasemonkey v4.11
+// @compatible      chrome Tested on Chrome v112 with Violentmonkey v2.14.0 and Tampermonkey v4.18.1
 // ==/UserScript==
 
 (function () {
   'use strict';
+
+  function accessLocalStorageItems(type, deleteItems = false) {
+    const entries = Object.keys(localStorage).filter(storageItem => storageItem.startsWith(type.toLowerCase() + '-'))
+    if (!deleteItems) return entries.length
+    const approval = confirm(`Do you really want to delete all ${entries.length} ${type}s from your browser\'s local storage? This action cannot be undone.`)
+    if (!approval) return null
+    entries.forEach(storageItem => {
+      localStorage.removeItem(storageItem)
+    })
+    updateLocalStorageItemCount(type)
+    alert(`Done! ${entries.length} ${type} entries were deleted`)
+  }
+
+  function updateLocalStorageItemCount(type) {
+    GM_config.fields[`local-storage-clear-${type.toLowerCase()}`].node.value = `Delete ${accessLocalStorageItems(type)} ${type}s from local storage`
+  }
 
   const frame = document.createElement('div');
   frame.classList.add('sb-options');
@@ -77,17 +93,32 @@
       'max-asin-age': {
         'section': ['Check every x days if the seller for a product has changed',
           'For better performance, SoldBy caches product-seller relationships in your browser\'s local storage for one day (24 hours). You can change that value here.'],
-        'label': 'Number of days after which a product should be re-fetched',
+        'label': 'Number of days after which a product ASIN should be re-fetched',
         'type': 'int',
         'default': 1
       },
       'max-seller-age': {
         'section': ['Check every x days if a seller has new ratings (or has moved countries)',
           'For better performance, SoldBy caches a seller\'s ratings and country in your browser\'s local storage for one week (7 days). You can change that value here.'],
-        'label': 'Number of days after which a seller should be re-fetched',
+        'label': 'Number of days after which a seller\'s info should be re-fetched',
         'type': 'int',
         'default': 7
-      }
+      },
+      'local-storage-clear-asin': {
+        'section': ['Clear SoldBy data from my browser\'s local storage',
+          'If you feel your browser\'s local storage might be stuffed with too much of SoldBy\'s data, you can delete the items here.'],
+        'label': ' ',
+        'type': 'button',
+        'size': 25,
+        'click': function () { accessLocalStorageItems('ASIN', true) }
+      },
+      'local-storage-clear-seller': {
+        'label': ' ',
+        'type': 'button',
+        'value': 'test',
+        'size': 25,
+        'click': function () { accessLocalStorageItems('Seller', true) }
+      },
     },
     'events': {
       'init': () => {
@@ -110,6 +141,8 @@
           if ("key" in evt) isEscape = (evt.key === "Escape" || evt.key === "Esc");
           if (isEscape) GM_config.close();
         };
+        updateLocalStorageItemCount('ASIN')
+        updateLocalStorageItemCount('Seller')
       },
       'save': () => {
         GM_config.close();
@@ -977,6 +1010,16 @@
     flex-direction: row-reverse;
     gap: 12px;
     align-items: center;
+  }
+
+  #sb-settings #sb-settings_local-storage-clear-asin_var,
+  #sb-settings #sb-settings_local-storage-clear-seller_var{
+    width: 50%;
+    display: inline-flex;
+  }
+
+  #sb-settings #sb-settings_local-storage-clear-seller_var {
+    justify-content: flex-end;
   }
   `);
 })();
