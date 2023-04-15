@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.6.3
+// @version         1.6.4
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -445,19 +445,23 @@
       return false; // seller is Amazon subsidiary and doesn't display ratings
     }
 
-    let text = sellerPage.getElementById('seller-info-feedback-summary').textContent;
+    let feedbackEl = sellerPage.getElementById('seller-info-feedback-summary')
+    let text = feedbackEl.querySelector('.feedback-detail-description').textContent
+    let starText = feedbackEl.querySelector('.a-icon-alt').textContent
+    text = text.replace(starText, '')
     let regex = /(\d+%).*?\((\d+)/;
     let zeroPercent = '0%';
 
+    const lang = document.documentElement.lang
     // Turkish places the percentage sign in front (e.g. %89)
-    if (document.documentElement.lang === 'tr-tr') {
+    if (lang === 'tr-tr') {
       regex = /(%\d+).*?\((\d+)/;
       zeroPercent = '%0';
     }
 
-    // amazon.com.be is being weird in french
-    if (document.documentElement.lang === 'fr-be') {
-      regex = /5(\d+ %).*?\((\d+)/;
+    // Special treatment for amazon.de in German and amazon.com.be in French
+    if (lang === 'de-de' || lang === 'fr-be') {
+      regex = /(\d+ %).*?\((\d+)/;
       zeroPercent = '0 %';
     }
 
