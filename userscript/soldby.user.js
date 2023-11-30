@@ -11,7 +11,7 @@
 // @description:it  Mostra il nome, il paese di origine e le valutazioni per i venditori di terze parti su Amazon (e mette in evidenza i venditori cinesi)
 // @namespace       https://github.com/tadwohlrapp
 // @author          Tad Wohlrapp
-// @version         1.7.1
+// @version         1.7.2
 // @license         MIT
 // @homepageURL     https://github.com/tadwohlrapp/soldby
 // @supportURL      https://github.com/tadwohlrapp/soldby/issues
@@ -33,8 +33,8 @@
 // @require         https://openuserjs.org/src/libs/sizzle/GM_config.min.js
 // @grant           GM.getValue
 // @grant           GM.setValue
-// @compatible      firefox Tested on Firefox v115 with Violentmonkey v2.14.0, Tampermonkey v4.18.1 and Greasemonkey v4.11
-// @compatible      chrome Tested on Chrome v114 with Violentmonkey v2.14.0 and Tampermonkey v4.19.0
+// @compatible      firefox Tested on Firefox v119 with Violentmonkey v2.16.0, Tampermonkey v4.19.0 and Greasemonkey v4.11
+// @compatible      chrome Tested on Chrome v119 with Violentmonkey v2.16.0 and Tampermonkey v4.19.0
 // ==/UserScript==
 
 (function () {
@@ -344,6 +344,8 @@
               queryMerchantName = productPage.querySelector('#tabular-buybox .tabular-buybox-container > .tabular-buybox-text:last-of-type').textContent.trim();
             } else if (productPage.querySelector('#merchant-info')) {
               queryMerchantName = productPage.querySelector('#merchant-info').textContent.trim();
+            } else if (productPage.querySelector('[offer-display-feature-name="desktop-merchant-info"]')) {
+              queryMerchantName = productPage.querySelector('[offer-display-feature-name="desktop-merchant-info"]').textContent.trim();
             }
 
             if (queryMerchantName.replace(/\s/g, '').length) {
