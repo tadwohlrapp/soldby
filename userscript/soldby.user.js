@@ -206,6 +206,9 @@
 
       products.forEach((product) => {
 
+        // Skip elements in the cart flyout
+        if (product.closest('#ewc-content, #nav-flyout-ewc, #nav-cart, #nav-cart-flyout')) return;
+        
         // Give each product the data-seller-name attribute to prevent re-capturing.
         product.dataset.sellerName = 'loading...';
 
